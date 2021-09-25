@@ -10,4 +10,10 @@
 #
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
-__version__ = '0.3.9'
+
+from yoyo import step
+
+steps = [
+    step(
+        "INSERT INTO STORAGE (key,value,description) values ('description_button_label','\U00002753 Описание \U00002753','Текст на кнопках Описания')"),
+]

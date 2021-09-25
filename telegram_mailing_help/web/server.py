@@ -16,6 +16,7 @@ import json
 import logging
 import pathlib
 import threading
+import time
 from functools import wraps
 
 import bottle
@@ -140,6 +141,8 @@ def pages(page):
 @post("/api/lists/add")
 def addDispatchList():
     dispatchGroupName = request.forms.name
+    if dispatchGroupName:
+        dispatchGroupName = dispatchGroupName.strip()
     description = request.forms.description
     links = request.forms.list.splitlines()
     groupSize = int(request.forms.groupSize)
@@ -177,6 +180,8 @@ def changeParamOfGroup(gr_id: int):
     body = json.load(request.body)
     dispatchGroup = db.getDispatchListGroupById(gr_id)
     for (k, v) in body.items():
+        if v and type(v) == str:
+            v = v.strip()
         if k != "id":
             dispatchGroup.__setattr__(k, v)
     db.saveDispatchListGroup(dispatchGroup)
@@ -233,7 +238,16 @@ class BottleServer(threading.Thread):
         @wraps(fn)
         def _logToLogger(*args, **kwargs):
             try:
-                actual_response = fn(*args, **kwargs)
+                raisedException = None
+                actual_response = None
+                execMessage = "OK"
+                start_time = time.time()
+                try:
+                    actual_response = fn(*args, **kwargs)
+                except Exception as e:
+                    execMessage = "%s" % e
+                    raisedException = e
+                timer = int((time.time() - start_time) * 100000) / 100.0
                 login = None
                 if request.get_header("Authorization") and request.get_header("Authorization").startswith("Basic "):
                     try:
@@ -243,12 +257,36 @@ class BottleServer(threading.Thread):
                         login = message_bytes.decode('ascii').split(':')[0]
                     except Exception as e:
                         log.error("Can't get login from header: %s", e)
-                log.info('%s: %s %s %s %s',
-                         login if login else request.get_header("Ssl-Dn", "non-ssl"),
-                         request.remote_addr,
-                         request.method,
-                         request.url,
-                         response.status)
+                buffer = request.body.getbuffer()
+                requestBody = '<empty>'
+                if len(buffer) > 0:
+                    try:
+                        requestBody = bytes(buffer[0:min(len(buffer), 1000)]).decode("UTF-8")
+                    except Exception as cantPrepareBodyExp:
+                        requestBody = "<can't prepare body: %s>" % cantPrepareBodyExp
+                responseBody = '<unknown>'
+                if actual_response is None:
+                    responseBody = '<empty>'
+                elif type(actual_response) == dict:
+                    try:
+                        responseBody = ("%s" % actual_response)[0:1000]
+                    except Exception as cantPrepareBodyExp:
+                        responseBody = "<can't prepare body: %s>" % cantPrepareBodyExp
+                log.info(
+                    'WEB: %(method)s %(url)s %(login)s: %(message)s (exec: %(timer)s ms); params: %(addr)s %(http_status)s; reqBody=[%(requestBody)s], respBody=[%(responseBody)s]',
+                    {
+                        'login': login if login else request.get_header("Ssl-Dn", "non-ssl"),
+                        'message': execMessage,
+                        'timer': timer,
+                        'addr': request.remote_addr,
+                        'method': request.method,
+                        'url': request.url,
+                        'http_status': response.status,
+                        'requestBody': requestBody,
+                        'responseBody': responseBody
+                    })
+                if raisedException:
+                    raise raisedException
                 return actual_response
             except Exception as e:
                 if type(e) is HTTPResponse and e.status_code in [302, 303]:

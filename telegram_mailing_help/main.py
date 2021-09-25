@@ -33,6 +33,8 @@ logging.basicConfig(level=logging.DEBUG,
                              filename=config.logFileName
                              if config.logFileName.startswith("/") else
                              config.rootConfigDir + "/" + config.logFileName)]))
+logging.getLogger("telegram.bot").setLevel(logging.INFO)
+logging.getLogger("telegram.vendor").setLevel(logging.INFO)
 from time import sleep
 from telegramMailingHelper import TelegramMailingHelper
 

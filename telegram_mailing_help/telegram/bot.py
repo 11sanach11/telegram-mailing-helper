@@ -12,6 +12,7 @@
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 import logging
 import threading
+import time
 from datetime import datetime
 
 from telegram import InlineKeyboardMarkup, \
@@ -23,6 +24,41 @@ from telegram_mailing_help.db.dao import Dao, User, UserState
 from telegram_mailing_help.logic.listPreparation import Preparation
 
 log = logging.getLogger("mailingBot")
+
+
+def timeit(func):
+    def timed(*args, **kwargs):
+        raisedException = None
+        execMessage = "OK"
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+        except Exception as e:
+            execMessage = "%s" % e
+            raisedException = e
+        try:
+            updateObj = args[1] if len(args) >= 3 else args[0]
+            userId = updateObj.effective_user.id
+            responseText = updateObj.effective_message.text[0:1000].replace("\n", " ") \
+                if updateObj.effective_message.text else "<empty>"
+        except Exception as e:
+            userId = "<can't get: %s>" % e
+            responseText = "<can't get: %s>" % e
+        timer = int((time.time() - start_time) * 100000) / 100.0
+        log.info(
+            'TBOT: %(method)s %(userId)s: %(message)s (exec: %(timer)s ms): response: %(response)s',
+            {
+                'message': execMessage,
+                'userId': userId,
+                'timer': timer,
+                'method': func.__name__,
+                'response': responseText,
+            })
+        if raisedException:
+            raise raisedException
+        return result
+
+    return timed
 
 
 # unicode codes: https://apps.timwhitlock.info/emoji/tables/unicode
@@ -48,6 +84,7 @@ class MailingBot:
         unknown_handler = MessageHandler(Filters.command, self.unknown)
         self.dispatcher.add_handler(unknown_handler)
 
+    @timeit
     def commandInfo(self, update: Update, context):
         message = update.message or update.callback_query.message
         text = self.db.getValueFromStorage("info_message") or "Информация по боту"
@@ -61,6 +98,7 @@ class MailingBot:
         self.updater.bot.send_message(chat_id=userId,
                                       text=message)
 
+    @timeit
     def commandMain(self, update: Update, context):
         message = update.message or update.callback_query.message
         user = self.db.getUserByTelegramId(str(message.chat.id))
@@ -93,7 +131,7 @@ class MailingBot:
             message.reply_text(text="Инфо по работе бота здесь: /info")
             buttons = [[InlineKeyboardButton(text=groupName.dispatch_group_name,
                                              callback_data="get_links_from: %s" % groupName.id),
-                        InlineKeyboardButton(text="\U00002753 Описание \U00002753",
+                        InlineKeyboardButton(text=self.db.getValueFromStorage("description_button_label"),
                                              callback_data="get_description_for: %s" % groupName.id)]
                        for groupName in self.db.getEnabledDispatchGroupNames()]
             if buttons:
@@ -108,6 +146,7 @@ class MailingBot:
         if update.callback_query:
             update.callback_query.answer()
 
+    @timeit
     @staticmethod
     def unknown(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=update.effective_chat.id,
@@ -122,6 +161,7 @@ class MailingBot:
                 "\U000026A0 У списка %s осталось %s свободных блоков, может быть пора добавить новые, добавить можно в админке: %s/pages/dispatch_lists.html" %
                 (groupInfo.dispatch_group_name, countOfFreeBlocksTrigger, dao.getValueFromStorage("admin_url")))
 
+    @timeit
     def getLinksFrom(self, update: Update, context):
         message = update.message or update.callback_query.message
         user = self.db.getUserByTelegramId(str(message.chat.id))
@@ -174,6 +214,7 @@ class MailingBot:
         else:
             message.reply_text("Получить данные не удалось, попробуйте позже или еще раз")
 
+    @timeit
     def confirmUnassignLinksItem(self, update: Update, context):
         message = update.message or update.callback_query.message
         dispatchListGroupId = int(update.callback_query.data[len("confirm_unassign_link_for: "):])
@@ -188,6 +229,7 @@ class MailingBot:
         )
         update.callback_query.answer()
 
+    @timeit
     def unassignLinksItem(self, update: Update, context):
         message = update.message or update.callback_query.message
         user = self.db.getUserByTelegramId(str(message.chat.id))
@@ -209,6 +251,7 @@ class MailingBot:
         else:
             message.reply_text("Получить данные не удалось, попробуйте позже или еще раз")
 
+    @timeit
     def getDescriptionFor(self, update: Update, context):
         message = update.message or update.callback_query.message
         user = self.db.getUserByTelegramId(str(message.chat.id))
@@ -224,6 +267,7 @@ class MailingBot:
         else:
             message.reply_text("Получить данные не удалось, попробуйте позже или еще раз")
 
+    @timeit
     def getDispatchGroupNames(self, update: Update, context):
         self.commandMain(update, context)
 
