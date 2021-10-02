@@ -26,14 +26,13 @@ removeButton = function (gr_id) {
     }
 }
 
-editObject = async function (field, current, gr_id) {
-    // let newName = prompt("Укажите новое значение для поля", current)
+editObject = async function (field, current_dom_id, gr_id) {
 
     const {value: newName} = await Swal.fire({
         input: 'textarea',
         inputLabel: "Укажите новое значение для поля: ",
         inputPlaceholder: 'Необходимое вам значение...',
-        inputValue: current,
+        inputValue: $("#" + current_dom_id).html(),
         inputAttributes: {
             'aria-label': 'Type your message here'
         },
