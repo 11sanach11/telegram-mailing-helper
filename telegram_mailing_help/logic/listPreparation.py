@@ -12,6 +12,8 @@
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 import logging
 import threading
+import time
+import uuid
 from datetime import datetime
 
 from tabulate import tabulate
@@ -23,10 +25,12 @@ log = logging.getLogger("helperLogic")
 
 
 class Preparation:
+
     def __init__(self, config, dao: Dao):
         self.dao = dao
         self.config = config
         self._assignLock = threading.Lock()
+        self.listPreparationProcessingState = {}
 
     @staticmethod
     def _chunks(lst, n):
@@ -34,8 +38,35 @@ class Preparation:
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
 
+    def _addChunksOfDispatchList(self, dispatchTemplate: DispatchListItem, links, devideBy, stateUuid: str):
+        start_time = time.time()
+        log.debug("Start preparation for uuid: %s", stateUuid)
+        countOfAdded = 0
+        totalCount = int(len(links) / devideBy)
+        for chunk in self._chunks(links, devideBy):
+            dispatchTemplate.id = None
+            dispatchTemplate.links_values_butch = "\n".join(chunk)
+            self.dao.saveDispatchList(dispatchTemplate)
+            countOfAdded += 1
+            self.listPreparationProcessingState[stateUuid] = \
+                {"id": stateUuid, "state": "inProcess", "totalCount": totalCount, "processed": countOfAdded}
+        self.listPreparationProcessingState[stateUuid] = \
+            {"id": stateUuid, "state": "finished", "totalCount": totalCount, "processed": countOfAdded}
+        timer = int((time.time() - start_time) * 100000) / 100.0
+        log.debug("Finish preparation for %s, exec time: %s ms, wait 25 sec before remove record", stateUuid, timer)
+        time.sleep(25)
+        del self.listPreparationProcessingState[stateUuid]
+        log.debug("Record about preparation %s must be removed", stateUuid)
+
+    def getPreparationState(self, stateUuid: str):
+        return self.listPreparationProcessingState.get(stateUuid, {"id": stateUuid, "state": "UNKNOWN"})
+
     def addDispatchList(self, dispatch_group_name: str, description: str, links: list, devideBy: int,
-                        disableByDefault: bool, showCommentWithBlock:bool, dispatch_group_id: int = None, repeatTimes: int = 1, ):
+                        disableByDefault: bool, showCommentWithBlock: bool, dispatch_group_id: int = None,
+                        repeatTimes: int = 1, ):
+        stateUuid = str(uuid.uuid4())
+        self.listPreparationProcessingState[stateUuid] = \
+            {"id": stateUuid, "state": "starting", "totalCount": int(len(links) / devideBy), "processed": 0}
         dispatchListGroup = self.dao.getDispatchListGroupById(dispatch_group_id) if dispatch_group_id \
             else self.dao.getDispatchListGroupByName(dispatch_group_name)
         if not dispatchListGroup:
@@ -49,7 +80,7 @@ class Preparation:
                 repeat=repeatTimes
             )
             dispatchListGroup = self.dao.saveDispatchListGroup(dispatchListGroup)
-        countOfAdded = 0
+
         dispatchTemplate = DispatchListItem(
             id=None,
             dispatch_group_id=dispatchListGroup.id,
@@ -57,12 +88,11 @@ class Preparation:
             is_assigned=False,
             created=datetime.now().isoformat()
         )
-        for chunk in self._chunks(links, devideBy):
-            dispatchTemplate.id = None
-            dispatchTemplate.links_values_butch = "\n".join(chunk)
-            self.dao.saveDispatchList(dispatchTemplate)
-            countOfAdded += 1
-        return countOfAdded
+
+        threading.Thread(daemon=True, target=self._addChunksOfDispatchList,
+                         args=(dispatchTemplate, links, devideBy, stateUuid)).start()
+
+        return self.listPreparationProcessingState.get(stateUuid, {})
 
     def unassignDispatchListFromUser(self, user: User, dispatch_list_id: int):
         with self._assignLock:
@@ -77,7 +107,8 @@ class Preparation:
             item = None
             while attempt < 5:
                 try:
-                    item, setIs_assigned, already_assigned_amount = self.dao.getFreeDispatchListItem(dispatch_group_id, user)
+                    item, setIs_assigned, already_assigned_amount = self.dao.getFreeDispatchListItem(dispatch_group_id,
+                                                                                                     user)
                     if item:
                         self.dao.assignBlockIntoUser(user, item, setIs_assigned)
                     break
@@ -90,7 +121,8 @@ class Preparation:
                 return (item.links_values_butch, item.id, already_assigned_amount)
             else:
                 return ("Свободных блоков для данного списка больше нет," \
-                        " пожалуйста обратитесь к куратору для их добавления или для скрытия данного списка", None, None)
+                        " пожалуйста обратитесь к куратору для их добавления или для скрытия данного списка", None,
+                        None)
 
     def prepareReport(self, sqlQuery: str, columns: list):
         result = []

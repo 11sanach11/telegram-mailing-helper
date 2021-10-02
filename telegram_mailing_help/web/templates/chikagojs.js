@@ -26,8 +26,19 @@ removeButton = function (gr_id) {
     }
 }
 
-editObject = function (field, current, gr_id) {
-    let newName = prompt("Укажите новое значение для поля", current)
+editObject = async function (field, current, gr_id) {
+    // let newName = prompt("Укажите новое значение для поля", current)
+
+    const {value: newName} = await Swal.fire({
+        input: 'textarea',
+        inputLabel: "Укажите новое значение для поля: ",
+        inputPlaceholder: 'Необходимое вам значение...',
+        inputValue: current,
+        inputAttributes: {
+            'aria-label': 'Type your message here'
+        },
+        showCancelButton: true
+    });
     if (newName) {
         const sendData = {};
         sendData[field] = newName
@@ -83,8 +94,19 @@ changeUserState = function (id) {
     });
 };
 
-changeSettings = function (key) {
-    let newValue = prompt("Укажите новое значение для свойства: " + key, $('#settings-' + key).html())
+changeSettings = async function (key) {
+
+    const {value: newValue} = await Swal.fire({
+        input: 'textarea',
+        inputLabel: "Укажите новое значение для свойства: " + key,
+        inputPlaceholder: 'Необходимое вам значение...',
+        inputValue: $('#settings-' + key).html(),
+        inputAttributes: {
+            'aria-label': 'Type your message here'
+        },
+        showCancelButton: true
+    })
+
     if (newValue) {
         $.ajax({
             type: "POST",
@@ -99,10 +121,10 @@ changeSettings = function (key) {
     }
 }
 
-loadDataFromFile=function (fileId){
+loadDataFromFile = function (fileId) {
     let reader = new FileReader();
     reader.onload = function (e) {
-        let inputData=e.target.result;
+        let inputData = e.target.result;
         $('#list_of_items').val(inputData);
         $('#list_of_items_counter').text('Количество строк: ' + inputData.split("\n").length);
     };
@@ -110,8 +132,52 @@ loadDataFromFile=function (fileId){
     reader.readAsText(file);
 }
 
-updateCounterForListOfItemsArea=function () {
+updateCounterForListOfItemsArea = function () {
     $('#list_of_items_counter').text('Количество строк: ' + ($(this).val().split("\n").length));
+}
+
+const waitUntilDispatchDataLoaded = function (state) {
+    let timerInterval;
+    Swal.fire({
+        title: 'Загружаю данные... Подождите...',
+        html: 'Начинается загрузка данных, подождите.',
+        timer: 25000,
+        didOpen: () => {
+            Swal.showLoading()
+            const selector = Swal.getHtmlContainer()
+            Swal.stopTimer();
+            timerInterval = setInterval(() => {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/lists/" + state.id + "/state",
+                    data: "",
+                    success: function (data) {
+                        if (data && data.state) {
+                            console.log("updated state: " + JSON.stringify(data));
+                            if (data.state == "starting" || data.state == "inProcess") {
+                            } else if (data.state == "finished") {
+                                clearInterval(timerInterval)
+                                Swal.hideLoading()
+                                Swal.resumeTimer();
+                            } else {
+                                clearInterval(timerInterval)
+                                Swal.hideLoading()
+                                Swal.resumeTimer();
+                            }
+                            selector.textContent = data.text;
+                        } else {
+                            console.error("Wrong answer, please check it. Received: " + data);
+                            clearInterval(timerInterval)
+                            Swal.hideLoading()
+                        }
+                    }
+                });
+            }, 1000)
+        },
+        willClose: () => {
+            clearInterval(timerInterval)
+        }
+    });
 }
 
 GLOBAL_DIRTY_STORAGE = {};

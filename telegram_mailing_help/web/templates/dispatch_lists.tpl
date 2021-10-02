@@ -63,11 +63,9 @@
                 <div class="u-container-style u-tab-pane" id="tab-4d57" role="tabpanel" aria-labelledby="link-tab-4d57">
                     <div class="u-container-layout u-container-layout-4">
                         <div class="u-form u-form-1">
-                            <form action="/api/lists/add" method="POST"
+                            <form id="add-dispatch-list-form" action="/api/lists/add" method="POST"
                                   class="u-clearfix u-form-spacing-10 u-form-vertical u-inner-form"
                                   style="padding: 9px;" source="email" name="form">
-                                <input type="hidden" id="siteId" name="siteId" value="186719">
-                                <input type="hidden" id="pageId" name="pageId" value="186721">
                                 <div class="u-form-group u-form-name">
                                     <datalist id="dispatchGroupNames">
                                         %for info in dispatchGroupNames:
@@ -149,7 +147,6 @@
                                 <div class="u-form-send-error u-form-send-message"> Что-то пошло не так, пожалуйста
                                     повторите позже
                                 </div>
-                                <input type="hidden" value="" name="recaptchaResponse">
                             </form>
                         </div>
                     </div>

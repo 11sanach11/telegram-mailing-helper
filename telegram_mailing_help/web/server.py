@@ -138,6 +138,36 @@ def pages(page):
     return static_file(page, root=_getTemplateFile(""))
 
 
+def _convertToClientResponse(state):
+    if state and state.get("state"):
+        text = None
+        if state.get("state") == "starting":
+            text = "Загрузка данных начинается, подождите еще немного времени"
+        elif state.get("state") == "inProcess":
+            text = "Происходит загрузка данных, загружено %s записей из %s" \
+                   % (state.get("processed"), state.get("totalCount"))
+        elif state.get("state") == "finished":
+            text = "Список был успешно добавлен, теперь его можно использовать. Добавлено %s новых блоков" \
+                   % state.get("processed")
+        else:
+            text = "Список должен быть добавлен, теперь его можно использовать"
+        return {"success": True,
+                "id": state.get("id"),
+                "state": state.get("state"),
+                "countOfAddedItems": state.get("processed"),
+                "totalCount": state.get("totalCount"),
+                "text": text}
+    else:
+        return {"success": False,
+                "countOfAddedItems": 0,
+                "text": "Что-то пошло не так, попробуйте добавить записи еще раз"}
+
+
+@get("/api/lists/<state_id>/state")
+def getPreparationState(state_id):
+    return _convertToClientResponse(preparation.getPreparationState(state_id))
+
+
 @post("/api/lists/add")
 def addDispatchList():
     dispatchGroupName = request.forms.name
@@ -149,12 +179,10 @@ def addDispatchList():
     repeatTimes = int(request.forms.repeatTimes)
     disableByDefault = bool(request.forms.disableByDefault)
     showCommentWithBlock = bool(request.forms.showCommentWithBlock)
-    countOfAddedDispatchList = preparation.addDispatchList(dispatchGroupName, description, links, groupSize,
-                                                           disableByDefault, showCommentWithBlock,
-                                                           repeatTimes=repeatTimes)
-    return {"success": True,
-            "countOfAddedItems": countOfAddedDispatchList,
-            "text": "Список был успешно добавлен, теперь его можно использовать.\nДобавлено %s новых блоков" % countOfAddedDispatchList}
+    state = preparation.addDispatchList(dispatchGroupName, description, links, groupSize,
+                                        disableByDefault, showCommentWithBlock,
+                                        repeatTimes=repeatTimes)
+    return _convertToClientResponse(state)
 
 
 @get("/templates/dispatch_group_buttons")

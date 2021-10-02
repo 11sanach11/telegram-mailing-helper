@@ -3,6 +3,7 @@ import logging
 import random
 import tempfile
 import threading
+import time
 import uuid
 from datetime import datetime
 from time import sleep
@@ -41,7 +42,10 @@ def test_small_count_of_data():
         True,
         False
     )
-    assert result == 1
+    while result["state"] != "finished":
+        time.sleep(0.05)
+        result = preparation.getPreparationState(result["id"])
+    assert result["processed"] == 1
     assert dao.getDispatchGroupInfo(dao.getDispatchListGroupByName(dispatch_group_name).id).count == 1
 
 
@@ -56,8 +60,11 @@ def test_enough_data():
         group_size,
         False,
         True)
+    while result["state"] != "finished":
+        time.sleep(0.05)
+        result = preparation.getPreparationState(result["id"])
     common_count_of_rows = links_count // group_size + (bool(links_count % group_size) * 1)
-    assert result == common_count_of_rows
+    assert result["processed"] == common_count_of_rows
     assert dao.getDispatchGroupInfo(
         dao.getDispatchListGroupByName(dispatch_group_name).id).free_count == common_count_of_rows
     assert dispatch_group_name in map(lambda x: x.dispatch_group_name, list(dao.getAllDispatchGroupNames()))

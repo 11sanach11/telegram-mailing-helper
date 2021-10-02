@@ -1077,6 +1077,7 @@
                     if (/list-manage[1-9]?.com/i.test(url)) return e(o(this), url), void 0;
                     var form = o(this);
                     o.ajax({type: s, url: url, data: o(this).serialize()}).done(function (data) {
+                        waitUntilDispatchDataLoaded(data)
                         if (data && data.success) if (i(form, data.text), l) window.location.replace(l); else t(form); else n(form, data.error)
                     }).fail(function () {
                         n(form)
