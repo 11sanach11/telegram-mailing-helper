@@ -135,7 +135,7 @@ updateCounterForListOfItemsArea = function () {
     $('#list_of_items_counter').text('Количество строк: ' + ($(this).val().split("\n").length));
 }
 
-const waitUntilDispatchDataLoaded = function (state) {
+const waitUntilDispatchDataLoaded = function (waitData) {
     let timerInterval;
     Swal.fire({
         title: 'Загружаю данные... Подождите...',
@@ -146,35 +146,52 @@ const waitUntilDispatchDataLoaded = function (state) {
             const selector = Swal.getHtmlContainer()
             Swal.stopTimer();
             timerInterval = setInterval(() => {
-                $.ajax({
-                    type: "GET",
-                    url: "/api/lists/" + state.id + "/state",
-                    data: "",
-                    success: function (data) {
-                        if (data && data.state) {
-                            console.log("updated state: " + JSON.stringify(data));
-                            if (data.state == "starting" || data.state == "inProcess") {
-                            } else if (data.state == "finished") {
-                                clearInterval(timerInterval)
-                                Swal.hideLoading()
-                                Swal.resumeTimer();
-                            } else {
-                                clearInterval(timerInterval)
-                                Swal.hideLoading()
-                                Swal.resumeTimer();
+                if (waitData.response) {
+                    if (waitData.response.success == true) {
+                        $.ajax({
+                            type: "GET",
+                            url: "/api/lists/" + waitData.response.id + "/state",
+                            data: "",
+                            success: function (data) {
+                                if (data && data.state) {
+                                    console.log("updated state: " + JSON.stringify(data));
+                                    if (data.state == "starting" || data.state == "inProcess") {
+                                        //just update message
+                                    } else if (data.state == "finished") {
+                                        waitData.form.trigger("reset");
+                                        clearInterval(timerInterval);
+                                        Swal.hideLoading();
+                                        Swal.resumeTimer();
+                                    } else {
+                                        clearInterval(timerInterval);
+                                        Swal.hideLoading();
+                                        Swal.resumeTimer();
+                                    }
+                                    selector.textContent = data.text;
+                                } else {
+                                    console.error("Wrong answer, please check it. Received: " + data);
+                                    clearInterval(timerInterval);
+                                    Swal.hideLoading();
+                                }
+                            },
+                            error: function (error) {
+                                clearInterval(timerInterval);
+                                Swal.hideLoading();
+                                selector.textContent = "Что-то пошло не так.";
+                                Swal.showValidationMessage("status: " + error.status + ", statusText: " + error.statusText);
                             }
-                            selector.textContent = data.text;
-                        } else {
-                            console.error("Wrong answer, please check it. Received: " + data);
-                            clearInterval(timerInterval)
-                            Swal.hideLoading()
-                        }
+                        });
+                    } else {
+                        clearInterval(timerInterval);
+                        Swal.hideLoading();
+                        selector.textContent = "Что-то пошло не так";
+                        Swal.showValidationMessage("status: " + waitData.response.status + ", statusText: " + waitData.response.statusText);
                     }
-                });
+                }
             }, 1000)
         },
         willClose: () => {
-            clearInterval(timerInterval)
+            clearInterval(timerInterval);
         }
     });
 }

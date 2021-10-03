@@ -1053,7 +1053,6 @@
             }
 
             function i(form, e) {
-                form.trigger("reset");
                 var t = e ? form.find(".u-form-send-success").clone() : form.find(".u-form-send-success");
                 if (e) t.text(e), form.find(".u-form-send-success").parent().append(t);
                 t.show(), setTimeout(function () {
@@ -1076,10 +1075,13 @@
                     if (("email" === o(this).attr("source") || "customphp" === o(this).attr("source")) && "true" === o(this).attr("redirect")) l = o(this).attr("redirect-url") && !o.isNumeric(o(this).attr("redirect-url")) ? o(this).attr("redirect-url") : o(this).attr("redirect-address");
                     if (/list-manage[1-9]?.com/i.test(url)) return e(o(this), url), void 0;
                     var form = o(this);
+                    const waitData = {"response": null, "form":form}
+                    waitUntilDispatchDataLoaded(waitData)
                     o.ajax({type: s, url: url, data: o(this).serialize()}).done(function (data) {
-                        waitUntilDispatchDataLoaded(data)
+                        waitData["response"] = data
                         if (data && data.success) if (i(form, data.text), l) window.location.replace(l); else t(form); else n(form, data.error)
-                    }).fail(function () {
+                    }).fail(function (error) {
+                        waitData["response"] = error;
                         n(form)
                     })
                 }, click: function (e) {
