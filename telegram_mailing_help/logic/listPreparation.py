@@ -62,7 +62,9 @@ class Preparation:
         return self.listPreparationProcessingState.get(stateUuid, {"id": stateUuid, "state": "UNKNOWN"})
 
     def addDispatchList(self, dispatch_group_name: str, description: str, links: list, devideBy: int,
-                        disableByDefault: bool, showCommentWithBlock: bool, dispatch_group_id: int = None,
+                        disableByDefault: bool, showCommentWithBlock: bool, showCountOfTakenBlocks: bool,
+                        showGroupOnlyFor: str,
+                        dispatch_group_id: int = None,
                         repeatTimes: int = 1, ):
         stateUuid = str(uuid.uuid4())
         self.listPreparationProcessingState[stateUuid] = \
@@ -77,6 +79,8 @@ class Preparation:
                 description=description,
                 enabled=not disableByDefault,
                 show_comment_with_block=showCommentWithBlock,
+                show_count_of_taken_blocks=showCountOfTakenBlocks,
+                show_group_only_for=showGroupOnlyFor,
                 repeat=repeatTimes
             )
             dispatchListGroup = self.dao.saveDispatchListGroup(dispatchListGroup)
@@ -126,6 +130,9 @@ class Preparation:
 
     def prepareReport(self, sqlQuery: str, columns: list):
         result = []
+        totalSum = 0
         for s in self.dao.freeQuery(sqlQuery):
+            totalSum = totalSum + s[len(s) - 1]
             result.append(list(s))
+        result.append(["Итого", totalSum])
         return tabulate(result, headers=columns, tablefmt='grid')

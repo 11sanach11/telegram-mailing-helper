@@ -130,11 +130,16 @@ class MailingBot:
                                        callback_data="get_dispatch_group_names")]]))
         else:
             message.reply_text(text="Инфо по работе бота здесь: /info")
+
+            dispatchGroups = filter(
+                lambda gr: not gr.show_group_only_for or user.telegram_id in gr.show_group_only_for.strip().split(","),
+                self.db.getEnabledDispatchGroupNames())
+
             buttons = [[InlineKeyboardButton(text=groupName.dispatch_group_name,
                                              callback_data="get_links_from: %s" % groupName.id),
                         InlineKeyboardButton(text=self.db.getValueFromStorage("description_button_label"),
                                              callback_data="get_description_for: %s" % groupName.id)]
-                       for groupName in self.db.getEnabledDispatchGroupNames()]
+                       for groupName in dispatchGroups]
             if buttons:
                 text = "Выберите рассылку из предложенных, %s:" % user.name
                 message.reply_text(text,
@@ -185,6 +190,10 @@ class MailingBot:
                     context.bot.send_message(chat_id=update.effective_chat.id,
                                              text=" <b style='text-align: center;'>Описание</b>: %s" % dispatchListGroup.description,
                                              parse_mode=ParseMode.HTML)
+                if (dispatchListGroup.show_count_of_taken_blocks):
+                    context.bot.send_message(chat_id=update.effective_chat.id,
+                                             text="Взятый за сегодня блок: %s" % self.db.getCountOfAssignedBlocksForGroupId(
+                                                 dispatchListGroupId))
                 notifTelegramId = self.db.getValueFromStorage("send_notification_only_5_blocks_left_to_telegram_id");
                 if (notifTelegramId):
                     threading.Thread(target=self._checkCountOfLeftBlocksAndSendNotification,

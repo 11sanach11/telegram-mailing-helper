@@ -38,7 +38,7 @@ editObject = async function (field, current_dom_id, gr_id) {
         },
         showCancelButton: true
     });
-    if (newName) {
+    if (newName != undefined) {
         const sendData = {};
         sendData[field] = newName
         $.ajax({

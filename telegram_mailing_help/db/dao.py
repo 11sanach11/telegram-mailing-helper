@@ -71,6 +71,8 @@ class DispatchListGroupItem:
     repeat: int = 1
     hidden: bool = False
     show_comment_with_block: bool = False
+    show_count_of_taken_blocks: bool = False
+    show_group_only_for: str = None
 
 
 @dataclass
@@ -85,6 +87,8 @@ class DispatchGroupInfo:
     priority: int = 100
     repeat: int = 1
     show_comment_with_block: bool = False
+    show_count_of_taken_blocks: bool = False
+    show_group_only_for: str = None
 
 
 @dataclass
@@ -93,6 +97,7 @@ class DispatchGroupNameInfo:
     dispatch_group_name: str
     description: str
     enabled: bool
+    show_group_only_for: str
 
 
 @dataclass
@@ -287,7 +292,7 @@ class Dao:
 
     def getAllDispatchGroupNames(self):
         result = self.worker.execute(
-            "SELECT id, dispatch_group_name, description, enabled FROM DISPATCH_LIST_GROUP WHERE hidden = 0 ORDER BY priority, dispatch_group_name;")
+            "SELECT id, dispatch_group_name, description, enabled, show_group_only_for FROM DISPATCH_LIST_GROUP WHERE hidden = 0 ORDER BY priority, dispatch_group_name;")
         if len(result) == 0:
             return []
         else:
@@ -296,7 +301,7 @@ class Dao:
 
     def getEnabledDispatchGroupNames(self):
         result = self.worker.execute(
-            "SELECT id, dispatch_group_name, description, enabled FROM DISPATCH_LIST_GROUP WHERE enabled = 1 ORDER BY priority, dispatch_group_name;")
+            "SELECT id, dispatch_group_name, description, enabled, show_group_only_for FROM DISPATCH_LIST_GROUP WHERE enabled = 1 ORDER BY priority, dispatch_group_name;")
         if len(result) == 0:
             return []
         else:
@@ -323,7 +328,8 @@ class Dao:
 
     def getDispatchGroupInfo(self, dispatch_group_id):
         result = self.worker.execute(
-            "SELECT dlg.id, dlg.dispatch_group_name,COUNT(dl.id),SUM(dl.is_assigned),dlg.enabled,dlg.description,dlg.priority,dlg.repeat,dlg.show_comment_with_block FROM DISPATCH_LIST dl LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dl.dispatch_group_id=dlg.id) WHERE dl.dispatch_group_id=? GROUP BY dl.dispatch_group_id",
+            "SELECT dlg.id, dlg.dispatch_group_name,COUNT(dl.id),SUM(dl.is_assigned),dlg.enabled,dlg.description,dlg.priority,dlg.repeat,dlg.show_comment_with_block,dlg.show_count_of_taken_blocks,dlg.show_group_only_for"
+            " FROM DISPATCH_LIST dl LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dl.dispatch_group_id=dlg.id) WHERE dl.dispatch_group_id=? GROUP BY dl.dispatch_group_id",
             values=(dispatch_group_id,))
         if len(result) == 0:
             return None
@@ -339,5 +345,15 @@ class Dao:
                 description=row[5],
                 priority=row[6],
                 repeat=row[7],
-                show_comment_with_block=row[8]
+                show_comment_with_block=row[8],
+                show_count_of_taken_blocks=row[9],
+                show_group_only_for=row[10],
             )
+
+    def getCountOfAssignedBlocksForGroupId(self, dispatch_group_id) -> int:
+        return self.worker.execute(
+            "SELECT count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
+            "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
+            "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
+            " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now') AND dlg.id=?",
+            values=(dispatch_group_id,))[0]

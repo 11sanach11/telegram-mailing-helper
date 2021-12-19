@@ -85,12 +85,17 @@ def settings():
     top_today = preparation.prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)=DATE('now') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
     top_yesterday = preparation.prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
         "where dla.state='assigned' AND DATE(dla.change_date)=DATE('now','-1 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        ["Имя", "Кол-во взятых блоков"])
+    top_last_7_day = preparation.prepareReport(
+        "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
+        "left join USERS u on (u.id = dla.users_id ) "
+        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','-7 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
     top_month = preparation.prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
@@ -120,6 +125,7 @@ def settings():
                     top_month=top_month,
                     top_lists_today=top_lists_today,
                     top_lists_yesterday=top_lists_yesterday,
+                    top_last_7_day=top_last_7_day,
                     )
 
 
@@ -180,7 +186,7 @@ def addDispatchList():
     disableByDefault = bool(request.forms.disableByDefault)
     showCommentWithBlock = bool(request.forms.showCommentWithBlock)
     state = preparation.addDispatchList(dispatchGroupName, description, links, groupSize,
-                                        disableByDefault, showCommentWithBlock,
+                                        disableByDefault, showCommentWithBlock, False, "",
                                         repeatTimes=repeatTimes)
     return _convertToClientResponse(state)
 

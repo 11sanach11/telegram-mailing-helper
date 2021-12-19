@@ -15,7 +15,7 @@ git -C $workdir checkout $version
 echo "Switch into version: $(git -C $workdir describe --tags --abbrev=0)"
 echo "Update project dependencies..."
 cd $workdir
-poetry install
+poetry install --no-dev
 echo "Start..."
 sudo service $service_name start
 echo "Started... please check info! on 'http://host:port/info"

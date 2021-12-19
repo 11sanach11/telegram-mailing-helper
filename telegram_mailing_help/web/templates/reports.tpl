@@ -12,12 +12,15 @@
                   <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-2" id="link-tab-1444" href="#tab-1444" role="tab" aria-controls="tab-1444" aria-selected="false">Топ по людям за вчера</a>
               </li>
               <li class="u-tab-item" role="presentation">
+                  <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-3" id="link-tab-02a10" href="#tab-02a10" role="tab" aria-controls="tab-02a10" aria-selected="false">Топ по людям за последние 7 дней</a>
+              </li>
+              <li class="u-tab-item" role="presentation">
               <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-2" id="link-tab-02a7" href="#tab-02a7" role="tab" aria-controls="tab-02a7" aria-selected="false">Топ по людям за месяц</a>
             </li>
-            <li class="u-tab-item" role="presentation">
+              <li class="u-tab-item" role="presentation">
               <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-3" id="link-tab-02a8" href="#tab-02a8" role="tab" aria-controls="tab-02a8" aria-selected="false">Топ по обработанным блокам за сегодня</a>
             </li>
-            <li class="u-tab-item" role="presentation">
+              <li class="u-tab-item" role="presentation">
               <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-3" id="link-tab-02a9" href="#tab-02a9" role="tab" aria-controls="tab-02a9" aria-selected="false">Топ по обработанным блокам за вчера</a>
             </li>
           </ul>
@@ -72,6 +75,17 @@
                   <div class="u-container-layout u-container-layout-4">
                     <pre>
 {{top_lists_yesterday}}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="u-container-style u-tab-pane" id="tab-02a10" role="tabpanel" aria-labelledby="link-tab-02a10">
+              <div class="u-container-layout u-valign-top u-container-layout-3">
+                <div class="u-container-style u-group u-white u-group-2">
+                  <div class="u-container-layout u-container-layout-4">
+                    <pre>
+{{top_last_7_day}}
                     </pre>
                   </div>
                 </div>

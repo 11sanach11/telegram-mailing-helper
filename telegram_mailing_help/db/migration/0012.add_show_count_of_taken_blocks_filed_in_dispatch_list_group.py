@@ -10,4 +10,14 @@
 #
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
-__version__ = '0.3.15'
+import shutil
+from datetime import datetime
+
+from yoyo import step
+
+from telegram_mailing_help import appConfig
+from telegram_mailing_help.db import utils
+
+steps = [
+    step("ALTER TABLE DISPATCH_LIST_GROUP ADD COLUMN show_count_of_taken_blocks boolean DEFAULT false;"),
+]

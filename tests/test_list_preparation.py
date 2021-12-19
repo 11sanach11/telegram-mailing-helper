@@ -40,7 +40,9 @@ def test_small_count_of_data():
         ["only you"],
         10,
         True,
-        False
+        False,
+        False,
+        "",
     )
     while result["state"] != "finished":
         time.sleep(0.05)
@@ -59,7 +61,9 @@ def test_enough_data():
         ["@tralivali_%s" % i for i in range(links_count)],
         group_size,
         False,
-        True)
+        True,
+        False,
+        "")
     while result["state"] != "finished":
         time.sleep(0.05)
         result = preparation.getPreparationState(result["id"])
