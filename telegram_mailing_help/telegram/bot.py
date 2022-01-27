@@ -67,6 +67,7 @@ class MailingBot:
         self.db = db
         self.preparation = preparation
         self.daemon = True
+        self.config = config
         self.updater = Updater(token=config.telegramToken)
         self.dispatcher = self.updater.dispatcher
         self.dispatcher.add_handler(CommandHandler('start', self.commandMain))
@@ -282,8 +283,16 @@ class MailingBot:
         self.commandMain(update, context)
 
     def start(self):
-        # self.updater.start_webhook()
-        self.updater.start_polling()
+        if self.config.telegramWebhookURL and self.config.telegramWebhookHost and self.config.telegramWebhookPort:
+            self.updater.start_webhook(listen=self.config.telegramWebhookHost,
+                                       port=self.config.telegramWebhookPort,
+                                       url_path="t_webhook",
+                                       webhook_url=self.config.telegramWebhookURL + "/t_webhook")
+            log.info("Telegram webhook mode, local listen: %s:%s/t_webhook, expect external request in %s/t_webhook",
+                     self.config.telegramWebhookHost, self.config.telegramWebhookPort, self.config.telegramWebhookURL)
+        else:
+            self.updater.start_polling()
+            log.info("Telegram pooling mode")
 
     def stop(self):
         self.updater.stop()

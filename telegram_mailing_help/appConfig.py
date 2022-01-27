@@ -31,6 +31,9 @@ class ApplicationConfiguration:
     db: configDb.Configuration
     server: configServer.Configuration = configServer.Configuration()
     logOnlyInFile: bool = False
+    telegramWebhookURL: str = None  # https://example.com, but post in https://example.com/t_webhook
+    telegramWebhookHost: str = "localhost"
+    telegramWebhookPort: int = 33445
 
 
 def prepareConfig():
