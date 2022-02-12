@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "telegram_mailing_help"
-version = "0.4.0"
+version = "0.4.1"
 description = ""
 authors = ["cherkashin <alexander.cherkashin@sibit.tech>"]
 
@@ -14,6 +14,7 @@ sqlite3worker = "^1.1.7"
 gevent = "^20.12.1"
 systemd = "^0.16.1"
 tabulate = "^0.8.7"
+requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
