@@ -291,12 +291,12 @@ def confirmUser():
 def update(bot_name: str, bot_token: str):
     if bot_name != getXHelperBotNameHeader():
         raise RuntimeError(
-            "bot_name from url (%s) and bot_name from header (%s) different, it' impossible, please check you configuration",
-            bot_name, getXHelperBotNameHeader())
+            "bot_name from url (%s) and bot_name from header (%s) different, it' impossible, please check you configuration" %
+            (bot_name, getXHelperBotNameHeader()))
 
     if bot_token != getBot().telegramToken:
-        raise RuntimeError("wrong webhook call for helper bot %s: expected bot number: %s",
-                           getXHelperBotNameHeader(), getBot().telegramToken.split(":")[0])
+        raise RuntimeError("wrong webhook call for helper bot %s: expected bot number: %s" %
+                           (getXHelperBotNameHeader(), getBot().telegramToken.split(":")[0]))
     getBot().update(json.load(request.body))
 
 
