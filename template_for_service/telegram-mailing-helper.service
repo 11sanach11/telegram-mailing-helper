@@ -8,6 +8,8 @@ Before=network.target
 Type=notify
 TimeoutStopSec=10
 ExecStart=sh -c 'cd %WORKDIR%/telegram-mailing-helper;exec poetry run python ./telegram_mailing_help/main.py %WORKDIR%/telegram-mailing-helper/config.json 2>&1'
+ExecReload=/bin/kill -1 -- $MAINPID
+ExecStop=/bin/kill -15 -- $MAINPID
 Restart=on-failure
 User=%USER%
 [Install]

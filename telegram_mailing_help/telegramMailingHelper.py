@@ -43,9 +43,9 @@ class TelegramMailingHelper:
             try:
                 for mailingBot in self.telegramBotList.values():
                     mailingBot.stop()
-                break
             except Exception:
                 self._logAndPrintMessage("Exception while stop telegram bot")
+                log.exception("Exception while stop telegram bot")
             self._logAndPrintMessage("Sleep 1 second...")
             sleep(1)
         self._logAndPrintMessage("Application stopped")
