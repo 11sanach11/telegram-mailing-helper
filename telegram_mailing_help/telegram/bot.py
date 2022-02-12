@@ -317,7 +317,10 @@ class MailingBot:
 
     def stop(self):
         if self.webHookMode:
-            self.dispatcher.stop()
+            try:
+                self.dispatcher.stop()
+            except Exception:
+                log.exception("Problem with stopping of dispatcher. ignore it")
             result = requests.post("https://api.telegram.org/bot%s/deleteWebhook" % (self.telegramToken))
             log.info("Webhook deletion result: %s: %s", result.status_code, result.text)
         else:
