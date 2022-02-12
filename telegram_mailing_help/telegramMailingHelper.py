@@ -14,7 +14,8 @@
 import sys
 from appConfig import prepareAndGetConfigOnly
 from logging import getLogger
-from signal import SIGINT, SIGTERM, SIGABRT, signal, SIGHUP
+from signal import SIGINT, SIGTERM, SIGABRT, SIGHUP, signal
+from gevent import signal_handler
 from time import sleep
 
 import systemd.daemon
@@ -37,23 +38,19 @@ class TelegramMailingHelper:
         print(message)
         log.info(message)
 
-    def signal_stop_handler(self, signum, frame) -> None:
+    def gevent_signal_stop_handler(self):
         self._logAndPrintMessage("Try to stop helper...")
-        while True:
-            try:
-                for mailingBot in self.telegramBotList.values():
-                    mailingBot.stop()
-            except Exception:
-                self._logAndPrintMessage("Exception while stop telegram bot")
-                log.exception("Exception while stop telegram bot")
-            self._logAndPrintMessage("Sleep 1 second...")
-            sleep(1)
+        for mailingBot in self.telegramBotList.values():
+            mailingBot.stop()
         self._logAndPrintMessage("Application stopped")
         systemd.daemon.notify(systemd.daemon.Notification.STOPPING)
         self._logAndPrintMessage("Helper had been stopped")
         sys.exit()
 
-    def signal_reload_handler(self, signum=None, frame=None) -> None:
+    def signal_stop_handler(self, signum, frame) -> None:
+        self.gevent_signal_stop_handler()
+
+    def gevent_signal_reload_handler(self) -> None:
         self._logAndPrintMessage("Try to reload bot configurations, please note: bot list only may be reconfigured!")
         if len(self.migrationList) == 1 and list(self.migrationList.keys())[0] == _SINGLE_MODE_CONST:
             self._logAndPrintMessage("Current mode is _SINGLE_MODE, can't update bot list. Stop reload!")
@@ -79,6 +76,9 @@ class TelegramMailingHelper:
             except Exception as e:
                 self._logAndPrintMessage("Can't reload bot lists: %s" % e)
                 self.appConfig.telegramTokens = currentBotList
+
+    def signal_reload_handler(self, signum=None, frame=None) -> None:
+        self.gevent_signal_stop_handler()
 
     def stopBot(self, botName):
         if self.daoList.get(botName):
@@ -126,8 +126,13 @@ class TelegramMailingHelper:
         self.server = server.BottleServer(appConfig, self.daoList, self.preparationList, self.telegramBotList)
         self.server.start()
 
-        # process stop signal
-        for sig in (SIGINT, SIGTERM, SIGABRT):
-            signal(sig, self.signal_stop_handler)
-        # process reload signal
-        signal(SIGHUP, self.signal_reload_handler)
+        if appConfig.server.engine == "gevent":
+            for sig in (SIGINT, SIGTERM, SIGABRT):
+                signal_handler(sig, self.gevent_signal_stop_handler)
+            # process reload signal
+            signal_handler(SIGHUP, self.gevent_signal_reload_handler)
+        else:
+            for sig in (SIGINT, SIGTERM, SIGABRT):
+                signal(sig, self.signal_stop_handler)
+            # process reload signal
+            signal(SIGHUP, self.signal_reload_handler)
