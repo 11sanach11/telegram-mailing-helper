@@ -266,16 +266,19 @@ def getXHelperBotNameHeader():
     return request.get_header("X-HELPER-BOT-NAME", _SINGLE_MODE_CONST);
 
 
-def getDb() -> Dao:
-    return dbMap[getXHelperBotNameHeader()]
+def getDb(botName: str = None) -> Dao:
+    botKey = botName if botName else getXHelperBotNameHeader()
+    return dbMap[botKey]
 
 
-def getPreparation() -> Preparation:
-    return preparationMap[getXHelperBotNameHeader()]
+def getPreparation(botName: str = None) -> Preparation:
+    botKey = botName if botName else getXHelperBotNameHeader()
+    return preparationMap[botKey]
 
 
-def getBot() -> MailingBot:
-    return botMap[getXHelperBotNameHeader()]
+def getBot(botName: str = None) -> MailingBot:
+    botKey = botName if botName else getXHelperBotNameHeader()
+    return botMap[botKey]
 
 
 @post("/api/settings/change")
@@ -289,15 +292,10 @@ def confirmUser():
 
 @post("/t_webhook/<bot_name>/<bot_token>")
 def update(bot_name: str, bot_token: str):
-    if bot_name != getXHelperBotNameHeader():
-        raise RuntimeError(
-            "bot_name from url (%s) and bot_name from header (%s) different, it' impossible, please check you configuration" %
-            (bot_name, getXHelperBotNameHeader()))
-
-    if bot_token != getBot().telegramToken:
+    if bot_token != getBot(bot_name).telegramToken:
         raise RuntimeError("wrong webhook call for helper bot %s: expected bot number: %s" %
                            (getXHelperBotNameHeader(), getBot().telegramToken.split(":")[0]))
-    getBot().update(json.load(request.body))
+    getBot(bot_name).update(json.load(request.body))
 
 
 class BottleServer(threading.Thread):
