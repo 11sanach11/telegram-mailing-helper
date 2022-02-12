@@ -19,14 +19,14 @@ from telegram_mailing_help import appConfig
 from telegram_mailing_help.db import utils
 
 
-def copy_database_step(conn):
-    if appConfig._config is not None:
-        dbFile = utils.getDbFullPath(appConfig._config)
-        shutil.copyfile(dbFile, dbFile + "_copy_before_0004_normalize_%s" % datetime.now().isoformat())
+# def copy_database_step(conn):
+#     if appConfig._config is not None:
+#         dbFile = utils.getDbFullPath(appConfig._config)
+#         shutil.copyfile(dbFile, dbFile + "_copy_before_0004_normalize_%s" % datetime.now().isoformat())
 
 
 steps = [
-    step(copy_database_step),
+    # step(copy_database_step),
     step(
         "CREATE TABLE DISPATCH_LIST_GROUP (id INTEGER PRIMARY KEY, dispatch_group_name TEXT NOT NULL, social_network TEXT NULL, description TEXT, enabled BOOLEAN);",
         "DROP TABLE DISPATCH_LIST_GROUP;"),

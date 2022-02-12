@@ -22,9 +22,9 @@ log = getLogger("migration")
 
 
 class Migration:
-    def __init__(self, config):
+    def __init__(self, config, botName: str):
         self.migrations = read_migrations(str(pathlib.Path(__file__).parent.absolute()) + '/migration')
-        self.backend = get_backend("sqlite:///" + getDbFullPath(config))
+        self.backend = get_backend("sqlite:///" + getDbFullPath(config, botName))
 
     def migrate(self):
         log.info("Start migration...")

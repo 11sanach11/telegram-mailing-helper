@@ -21,10 +21,10 @@ config = ApplicationConfiguration(
     telegramToken='empty',
     logFileName='/tmp/log.log',
     db=Configuration(dbFile=tempfile.gettempdir() + "/test_migration_%s.db" % uuid.uuid4()))
-m = Migration(config)
+m = Migration(config, None)
 m.migrate()
 
-dao = Dao(config)
+dao = Dao(config, None)
 
 
 def test_save_dispatch_list_item():

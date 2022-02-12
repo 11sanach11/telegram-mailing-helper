@@ -94,6 +94,6 @@
                 <div class="u-black u-menu-overlay u-opacity u-opacity-70"></div>
             </div>
         </nav>
-        <h1 class="u-text u-text-1">Рассылки: админка</h1>
+        <h1 class="u-text u-text-1">Рассылки: админка для {{botName()}}</h1>
     </div>
 </header>

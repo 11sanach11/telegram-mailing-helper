@@ -25,10 +25,10 @@ config = ApplicationConfiguration(
     telegramToken='empty',
     logFileName='/tmp/test_log.log',
     db=Configuration(dbFile=tempfile.gettempdir() + "/test_migration_%s.db" % uuid.uuid4()))
-m = Migration(config)
+m = Migration(config, None)
 m.migrate()
 
-dao = Dao(config)
+dao = Dao(config, None)
 preparation = Preparation(config, dao)
 
 

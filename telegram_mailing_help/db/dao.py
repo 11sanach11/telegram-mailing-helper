@@ -117,11 +117,14 @@ class Storage:
 
 
 class Dao:
-    def __init__(self, config):
+    def __init__(self, config, botName: str):
         self.config = config
-        self.worker = Sqlite3Worker(getDbFullPath(self.config))
+        self.worker = Sqlite3Worker(getDbFullPath(self.config, botName))
         self.dispatchListFields = list(DispatchListItem.__annotations__.keys())
         self.userFields = list(User.__annotations__.keys())
+
+    def stop(self):
+        self.worker.close()
 
     def freeQuery(self, sql):
         return self.worker.execute(sql)

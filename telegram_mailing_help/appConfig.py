@@ -14,6 +14,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass
+from typing import List, Dict, Optional
 
 import dacite
 
@@ -26,26 +27,32 @@ _config = None
 @dataclass
 class ApplicationConfiguration:
     rootConfigDir: str
-    telegramToken: str
+    telegramToken: Optional[str]
     logFileName: str
     db: configDb.Configuration
     server: configServer.Configuration = configServer.Configuration()
+    telegramTokens = {}
     logOnlyInFile: bool = False
-    telegramWebhookURL: str = None  # https://example.com, but post in https://example.com/t_webhook
-    telegramWebhookHost: str = "localhost"
-    telegramWebhookPort: int = 33445
+    telegramWebhookURL: str = None  # https://example.com, but post in https://example.com/t_webhook (or https://example.com/t_webhook/<bot_name> if multibot mode)
 
 
 def prepareConfig():
     global _config
+    _config = prepareAndGetConfigOnly()
+    return _config
+
+
+def prepareAndGetConfigOnly():
     configFile = sys.argv[1] if len(sys.argv) > 1 else "../test_config.json"
     with open(configFile) as json_config:
-        appConfig = dacite.from_dict(ApplicationConfiguration, json.load(json_config))
-    for key in filter(lambda x: x.startswith('appConfig.'), os.environ.keys()):
-        print("CONFIGURATION: override value for: %s in appConfig from env" % key)
-        try:
-            exec("%s = %s" % (key, os.environ.get(key)))
-        except Exception as e:
-            print("Can't apply env variable for config: %s because: %s" % (key, e))
-    _config = appConfig
-    return appConfig
+        rawJson = json.load(json_config)
+        appConfig = dacite.from_dict(ApplicationConfiguration, rawJson)
+        if rawJson["telegramTokens"]:
+            appConfig.telegramTokens = rawJson["telegramTokens"]
+        for key in filter(lambda x: x.startswith('appConfig.'), os.environ.keys()):
+            print("CONFIGURATION: override value for: %s in appConfig from env" % key)
+            try:
+                exec("%s = %s" % (key, os.environ.get(key)))
+            except Exception as e:
+                print("Can't apply env variable for config: %s because: %s" % (key, e))
+        return appConfig

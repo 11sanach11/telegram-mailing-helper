@@ -12,11 +12,13 @@
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 from datetime import datetime
 
-def getDbFullPath(config):
+
+def getDbFullPath(config, botName: str):
+    db_suffix = "_%s" % botName if botName else ""
     if config.db.dbFile.startswith("/"):
-        fullDbFile = config.db.dbFile
+        fullDbFile = config.db.dbFile + db_suffix
     else:
-        fullDbFile = config.rootConfigDir + "/" + config.db.dbFile
+        fullDbFile = config.rootConfigDir + "/" + config.db.dbFile + db_suffix
     return fullDbFile
 
 
@@ -29,4 +31,3 @@ def dictFactory(cursor, row):
 
 def isoDatetimeStringToDatetime(isoDatetimeString: str):
     return datetime.strptime(isoDatetimeString)
-

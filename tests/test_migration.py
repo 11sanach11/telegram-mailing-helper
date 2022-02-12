@@ -23,9 +23,9 @@ def test_from_version_0002():
         logFileName='/tmp/log.log',
         db=Configuration(dbFile=dbFile))
     appConfig._config = config
-    m = Migration(config)
+    m = Migration(config, None)
     m.migrate()
-    dao = Dao(config)
+    dao = Dao(config, None)
     data = dao.freeQuery("select * from dispatch_list_group")
     assert len(data) == 2
     assert data[0][0] == 1
@@ -47,7 +47,7 @@ def test_from_version_0006():
         logFileName='/tmp/log.log',
         db=Configuration(dbFile=dbFile))
     appConfig._config = config
-    m = Migration(config)
+    m = Migration(config, None)
     m.migrate()
-    dao = Dao(config)
+    dao = Dao(config, None)
     assert dao.freeQuery("select repeat from dispatch_list_group limit 1")[0][0] == 1

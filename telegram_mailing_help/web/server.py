@@ -23,6 +23,8 @@ import bottle
 from bottle import TEMPLATE_PATH, HTTPResponse, BaseRequest, request, response, get, post, redirect, template, \
     static_file, run as run_bottle
 
+from telegram_mailing_help.telegramMailingHelper import _SINGLE_MODE_CONST
+
 HELPER_TEMPLATE_PATH = str(pathlib.Path(__file__).parent.absolute()) + '/templates/'
 TEMPLATE_PATH.append(HELPER_TEMPLATE_PATH)
 
@@ -50,10 +52,22 @@ def hashSumForStatic(staticFileName):
     return staticFileName + "?hash=" + HASHES_CACHE.get(staticFileName)
 
 
+def botName():
+    name = getXHelperBotNameHeader()
+    if name == _SINGLE_MODE_CONST:
+        return "SINGLE"
+    else:
+        return name
+
+
 bottle.BaseTemplate.defaults["hash"] = hashSumForStatic
-db: Dao = None
-preparation: Preparation = None
-bot: MailingBot = None
+bottle.BaseTemplate.defaults["botName"] = botName
+# db: Dao = None
+# preparation: Preparation = None
+# bot: MailingBot = None
+dbMap = {}
+preparationMap = {}
+botMap = {}
 
 
 def _getTemplateFile(templateName):
@@ -72,32 +86,32 @@ def info():
 
 @get("/pages/users.html")
 def users():
-    return template(_getTemplateFile("users.tpl"), users=db.getAllUsers(), userStateCls=UserState)
+    return template(_getTemplateFile("users.tpl"), users=getDb().getAllUsers(), userStateCls=UserState)
 
 
 @get("/pages/settings.html")
 def settings():
-    return template(_getTemplateFile("settings.tpl"), settings=db.getAllStorages())
+    return template(_getTemplateFile("settings.tpl"), settings=getDb().getAllStorages())
 
 
 @get("/pages/reports.html")
 def settings():
-    top_today = preparation.prepareReport(
+    top_today = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
         "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
-    top_yesterday = preparation.prepareReport(
+    top_yesterday = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
         "where dla.state='assigned' AND DATE(dla.change_date)=DATE('now','-1 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
-    top_last_7_day = preparation.prepareReport(
+    top_last_7_day = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
         "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','-7 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
-    top_month = preparation.prepareReport(
+    top_month = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
         "where dla.state='assigned' AND "
@@ -105,14 +119,14 @@ def settings():
         " GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"]
     )
-    top_lists_today = preparation.prepareReport(
+    top_lists_today = getPreparation().prepareReport(
         "SELECT dlg.dispatch_group_name, count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
         "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
         "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
         " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now') GROUP BY dlg.id  ORDER BY assignedCount DESC",
         ["Наименование кнопки", "Кол-во взятых блоков"]
     )
-    top_lists_yesterday = preparation.prepareReport(
+    top_lists_yesterday = getPreparation().prepareReport(
         "SELECT dlg.dispatch_group_name, count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
         "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
         "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
@@ -131,7 +145,7 @@ def settings():
 
 @get("/pages/dispatch_lists.html")
 def users():
-    return template(_getTemplateFile("dispatch_lists.tpl"), dispatchGroupNames=list(db.getAllDispatchGroupNames()))
+    return template(_getTemplateFile("dispatch_lists.tpl"), dispatchGroupNames=list(getDb().getAllDispatchGroupNames()))
 
 
 @get("/favicon.ico")
@@ -171,7 +185,7 @@ def _convertToClientResponse(state):
 
 @get("/api/lists/<state_id>/state")
 def getPreparationState(state_id):
-    return _convertToClientResponse(preparation.getPreparationState(state_id))
+    return _convertToClientResponse(getPreparation().getPreparationState(state_id))
 
 
 @post("/api/lists/add")
@@ -185,21 +199,21 @@ def addDispatchList():
     repeatTimes = int(request.forms.repeatTimes)
     disableByDefault = bool(request.forms.disableByDefault)
     showCommentWithBlock = bool(request.forms.showCommentWithBlock)
-    state = preparation.addDispatchList(dispatchGroupName, description, links, groupSize,
-                                        disableByDefault, showCommentWithBlock, False, "",
-                                        repeatTimes=repeatTimes)
+    state = getPreparation().addDispatchList(dispatchGroupName, description, links, groupSize,
+                                             disableByDefault, showCommentWithBlock, False, "",
+                                             repeatTimes=repeatTimes)
     return _convertToClientResponse(state)
 
 
 @get("/templates/dispatch_group_buttons")
 def getDispatchGroupButtons():
     return template(_getTemplateFile("dispatch_group_buttons.tpl"),
-                    dispatchGroupNames=list(db.getAllDispatchGroupNames()))
+                    dispatchGroupNames=list(getDb().getAllDispatchGroupNames()))
 
 
 @get("/templates/lists/<gr_id>")
 def getDispatchGroupInfo(gr_id):
-    info = db.getDispatchGroupInfo(gr_id)
+    info = getDb().getDispatchGroupInfo(gr_id)
     return template(_getTemplateFile("dispatch_group_info.tpl"), data={
         "info": info,
         "state": {
@@ -212,22 +226,22 @@ def getDispatchGroupInfo(gr_id):
 @post("/api/lists/<gr_id>/change")
 def changeParamOfGroup(gr_id: int):
     body = json.load(request.body)
-    dispatchGroup = db.getDispatchListGroupById(gr_id)
+    dispatchGroup = getDb().getDispatchListGroupById(gr_id)
     for (k, v) in body.items():
         if v and type(v) == str:
             v = v.strip()
         if k != "id":
             dispatchGroup.__setattr__(k, v)
-    db.saveDispatchListGroup(dispatchGroup)
+    getDb().saveDispatchListGroup(dispatchGroup)
 
 
 @post("/api/lists/<gr_id>/state")
 def changeStateOfGroupAt(gr_id):
     body = json.load(request.body)
     if body["state"] == "enable":
-        db.enableDispatchGroupName(gr_id)
+        getDb().enableDispatchGroupName(gr_id)
     elif body["state"] == "disable":
-        db.disableDispatchGroupName(gr_id)
+        getDb().disableDispatchGroupName(gr_id)
     else:
         raise RuntimeError("Unknown state for group: %s : %s" % (gr_id, body["state"]))
     return {"success": True, "gr_id": gr_id}
@@ -237,15 +251,31 @@ def changeStateOfGroupAt(gr_id):
 def confirmUser():
     body = json.load(request.body)
     userId = body["id"]
-    user = db.getUserById(userId)
+    user = getDb().getUserById(userId)
     userState = UserState(user.state)
     newUserState = UserState.CONFIRMED if userState in [UserState.NEW, UserState.BLOCKED] else UserState.BLOCKED
     user.state = newUserState.value
-    user = db.saveUser(user)
+    user = getDb().saveUser(user)
     if userState == UserState.NEW:
-        bot.sendFreeMessageToRegisteredUser(int(user.telegram_id), "Поздравляю, теперь у вас есть доступ до бота,"
-                                                                   " давайте начнем сначала, жми /start!")
+        getBot().sendFreeMessageToRegisteredUser(int(user.telegram_id), "Поздравляю, теперь у вас есть доступ до бота,"
+                                                                        " давайте начнем сначала, жми /start!")
     return {"success": True, "state": user.state, "localizedState": UserState(user.state).getLocalizedMessage()}
+
+
+def getXHelperBotNameHeader():
+    return request.get_header("X-HELPER-BOT-NAME", _SINGLE_MODE_CONST);
+
+
+def getDb() -> Dao:
+    return dbMap[getXHelperBotNameHeader()]
+
+
+def getPreparation() -> Preparation:
+    return preparationMap[getXHelperBotNameHeader()]
+
+
+def getBot() -> MailingBot:
+    return botMap[getXHelperBotNameHeader()]
 
 
 @post("/api/settings/change")
@@ -253,18 +283,34 @@ def confirmUser():
     body = json.load(request.body)
     key = body["key"]
     newValue = body["value"]
-    db.setValueInfoStorage(key, newValue)
+    getDb().setValueInfoStorage(key, newValue)
     return {"success": True, "key": key, "value": newValue}
+
+
+@post("/t_webhook/<bot_name>/<bot_token>")
+def update(bot_name: str, bot_token: str):
+    if bot_name != getXHelperBotNameHeader():
+        raise RuntimeError(
+            "bot_name from url (%s) and bot_name from header (%s) different, it' impossible, please check you configuration",
+            bot_name, getXHelperBotNameHeader())
+
+    if bot_token != getBot().telegramToken:
+        raise RuntimeError("wrong webhook call for helper bot %s: expected bot number: %s",
+                           getXHelperBotNameHeader(), getBot().telegramToken.split(":")[0])
+    getBot().update(json.load(request.body))
 
 
 class BottleServer(threading.Thread):
 
-    def __init__(self, config: ApplicationConfiguration, dao: Dao, preparationList: Preparation, tbot: MailingBot):
-        global db, preparation, bot
+    def __init__(self, config: ApplicationConfiguration,
+                 daoMap,
+                 preparationMapParam,
+                 tbotMap):
+        global dbMap, preparationMap, botMap
         threading.Thread.__init__(self, name=__name__)
-        db = dao
-        preparation = preparationList
-        bot = tbot
+        dbMap = daoMap
+        preparationMap = preparationMapParam
+        botMap = tbotMap
         self.daemon = True
         self.config = config
 
@@ -307,8 +353,9 @@ class BottleServer(threading.Thread):
                     except Exception as cantPrepareBodyExp:
                         responseBody = "<can't prepare body: %s>" % cantPrepareBodyExp
                 log.info(
-                    'WEB: %(method)s %(url)s %(login)s: %(message)s (exec: %(timer)s ms); params: %(addr)s %(http_status)s; reqBody=[%(requestBody)s], respBody=[%(responseBody)s]',
+                    '%(bot)s WEB: %(method)s %(url)s %(login)s: %(message)s (exec: %(timer)s ms); params: %(addr)s %(http_status)s; reqBody=[%(requestBody)s], respBody=[%(responseBody)s]',
                     {
+                        'bot': getXHelperBotNameHeader(),
                         'login': login if login else request.get_header("Ssl-Dn", "non-ssl"),
                         'message': execMessage,
                         'timer': timer,

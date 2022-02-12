@@ -13,12 +13,14 @@
 import logging
 import threading
 import time
+import requests
+from queue import Queue
 from datetime import datetime
 
 from telegram import InlineKeyboardMarkup, \
-    InlineKeyboardButton, Update, ParseMode
+    InlineKeyboardButton, Update, ParseMode, Bot
 from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryHandler, CallbackContext
-from telegram.ext import Updater
+from telegram.ext import Updater, Dispatcher
 
 from telegram_mailing_help.db.dao import Dao, User, UserState
 from telegram_mailing_help.logic.listPreparation import Preparation
@@ -63,13 +65,25 @@ def timeit(func):
 
 # unicode codes: https://apps.timwhitlock.info/emoji/tables/unicode
 class MailingBot:
-    def __init__(self, config, db: Dao, preparation: Preparation, ):
+    def __init__(self, botName: str, telegramToken: str, webHookMode: bool, telegramWebhookURL: str, db: Dao,
+                 preparation: Preparation, ):
         self.db = db
         self.preparation = preparation
         self.daemon = True
-        self.config = config
-        self.updater = Updater(token=config.telegramToken)
-        self.dispatcher = self.updater.dispatcher
+        self.botName = botName
+        self.telegramWebhookUrl = telegramWebhookURL
+        self.webHookMode = webHookMode
+        self.telegramToken = telegramToken
+        if webHookMode:
+            self.bot = Bot(telegramToken)
+            self.update_queue = Queue()
+            self.dispatcher = Dispatcher(self.bot, self.update_queue)
+            thread = threading.Thread(target=self.dispatcher.start, name="%s dispathcer thread" % botName)
+            thread.start()
+        else:
+            self.updater = Updater(token=telegramToken)
+            self.bot = self.updater.bot
+            self.dispatcher = self.updater.dispatcher
         self.dispatcher.add_handler(CommandHandler('start', self.commandMain))
         self.dispatcher.add_handler(CommandHandler('info', self.commandInfo))
         self.dispatcher.add_handler(
@@ -85,6 +99,12 @@ class MailingBot:
         unknown_handler = MessageHandler(Filters.command, self.unknown)
         self.dispatcher.add_handler(unknown_handler)
 
+    def update(self, rawUpdate: dict):
+        if not self.webHookMode:
+            raise RuntimeError("Can't process webhook request because server in pooling mode!")
+        update = Update.de_json(rawUpdate, self.bot)
+        self.update_queue.put(update)
+
     @timeit
     def commandInfo(self, update: Update, context):
         message = update.message or update.callback_query.message
@@ -96,8 +116,8 @@ class MailingBot:
             update.callback_query.answer()
 
     def sendFreeMessageToRegisteredUser(self, userId, message):
-        self.updater.bot.send_message(chat_id=userId,
-                                      text=message)
+        self.bot.send_message(chat_id=userId,
+                              text=message)
 
     @timeit
     def commandMain(self, update: Update, context):
@@ -283,16 +303,22 @@ class MailingBot:
         self.commandMain(update, context)
 
     def start(self):
-        if self.config.telegramWebhookURL and self.config.telegramWebhookHost and self.config.telegramWebhookPort:
-            self.updater.start_webhook(listen=self.config.telegramWebhookHost,
-                                       port=self.config.telegramWebhookPort,
-                                       url_path="t_webhook",
-                                       webhook_url=self.config.telegramWebhookURL + "/t_webhook")
-            log.info("Telegram webhook mode, local listen: %s:%s/t_webhook, expect external request in %s/t_webhook",
-                     self.config.telegramWebhookHost, self.config.telegramWebhookPort, self.config.telegramWebhookURL)
+        if self.webHookMode:
+            webHookUrl = "%s/t_webhook/%s/%s" % (self.telegramWebhookUrl, self.botName, self.telegramToken)
+            result = requests.post(
+                "https://api.telegram.org/bot%s/setWebhook?url=%s" % (self.telegramToken, webHookUrl))
+            log.info("Webhook registration result: %s: %s", result.status_code, result.text)
+            log.info("Telegram webhook mode, "
+                     "expected internal endpoint: POST t_webhook/%s/%s, registered endpoint for webhook: %s",
+                     self.botName, self.telegramToken, webHookUrl)
         else:
             self.updater.start_polling()
             log.info("Telegram pooling mode")
 
     def stop(self):
-        self.updater.stop()
+        if self.webHookMode:
+            self.dispatcher.stop()
+            result = requests.post("https://api.telegram.org/bot%s/deleteWebhook" % (self.telegramToken))
+            log.info("Webhook deletion result: %s: %s", result.status_code, result.text)
+        else:
+            self.updater.stop()
