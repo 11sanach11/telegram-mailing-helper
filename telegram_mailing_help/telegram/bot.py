@@ -32,6 +32,7 @@ def timeit(func):
     def timed(*args, **kwargs):
         raisedException = None
         execMessage = "OK"
+        botName = "<can't get botName>"
         start_time = time.time()
         try:
             result = func(*args, **kwargs)
@@ -43,13 +44,16 @@ def timeit(func):
             userId = updateObj.effective_user.id
             responseText = updateObj.effective_message.text[0:1000].replace("\n", " ") \
                 if updateObj.effective_message.text else "<empty>"
+            if len(args) >= 3:
+                botName = args[0].botName
         except Exception as e:
             userId = "<can't get: %s>" % e
             responseText = "<can't get: %s>" % e
         timer = int((time.time() - start_time) * 100000) / 100.0
         log.info(
-            'TBOT: %(method)s %(userId)s: %(message)s (exec: %(timer)s ms): response: %(response)s',
+            '%(botName)s TBOT: %(method)s %(userId)s: %(message)s (exec: %(timer)s ms): response: %(response)s',
             {
+                'botName': botName,
                 'message': execMessage,
                 'userId': userId,
                 'timer': timer,
