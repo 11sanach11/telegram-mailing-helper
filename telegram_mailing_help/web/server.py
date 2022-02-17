@@ -262,6 +262,14 @@ def confirmUser():
     return {"success": True, "state": user.state, "localizedState": UserState(user.state).getLocalizedMessage()}
 
 
+@get("/api/lists/<gr_id>/downloadData.txt")
+def downloadUnassignedData(gr_id):
+    response.content_type = 'text/text; charset=UTF8'
+    for s in getDb().freeQuery(
+            "select links_values_butch from dispatch_list where dispatch_group_id=%s and is_assigned=0" % gr_id):
+        yield s[0] + "\n"
+
+
 def getXHelperBotNameHeader():
     return request.get_header("X-HELPER-BOT-NAME", _SINGLE_MODE_CONST);
 

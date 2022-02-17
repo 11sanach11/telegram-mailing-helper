@@ -14,5 +14,6 @@
     <a href="#a" onclick="changeStateOfDispatchGroup('{{data["info"].id}}','{{data["state"]["value"]}}')">{{data["state"]["text"]}}</a>
     % if not data["info"].enabled:
     <p/><a href="#a" style="color:red" onclick="removeButton({{data['info'].id}})">УДАЛИТЬ КНОПКУ</a>
+    <p/><a target="_blank" href="/api/lists/{{data["info"].id}}/downloadData.txt" style="color:green">Скачать неиспользованные блоки</a>
     % end
 </div>

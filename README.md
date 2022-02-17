@@ -13,7 +13,7 @@ sudo chown $USER:$USER $WORKDIR/telegram-mailing-helper
 cd $WORKDIR
 git clone https://github.com/11sanach11/telegram-mailing-helper.git
 cd telegram-mailing-helper
-poetry install
+poetry install --no-dev
 cp ./test_config.json ./config.json
 <<<!!! PREPARE CONFIG FILE, SET server.port, telegramToken, etc...
 sudo cp ./template_for_service/telegram-mailing-helper.service /etc/systemd/system/telegram-mailing-helper.service
