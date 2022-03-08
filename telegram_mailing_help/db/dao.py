@@ -358,5 +358,5 @@ class Dao:
             "SELECT count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
             "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
             "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
-            " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now') AND dlg.id=?",
+            " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime') AND dlg.id=?",
             values=(dispatch_group_id,))[0]

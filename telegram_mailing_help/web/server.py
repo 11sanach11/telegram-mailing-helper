@@ -99,23 +99,23 @@ def settings():
     top_today = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','localtime') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
     top_yesterday = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)=DATE('now','-1 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        "where dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
     top_last_7_day = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','-7 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','localtime' ,'-7 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"])
     top_month = getPreparation().prepareReport(
         "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
         "where dla.state='assigned' AND "
-        "strftime('%Y',dla.change_date) = strftime('%Y',date('now')) AND  strftime('%m',dla.change_date) = strftime('%m',date('now'))"
+        "strftime('%Y',dla.change_date) = strftime('%Y',date('now','localtime')) AND  strftime('%m',dla.change_date) = strftime('%m',date('now','localtime'))"
         " GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков"]
     )
@@ -123,14 +123,14 @@ def settings():
         "SELECT dlg.dispatch_group_name, count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
         "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
         "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
-        " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now') GROUP BY dlg.id  ORDER BY assignedCount DESC",
+        " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime') GROUP BY dlg.id  ORDER BY assignedCount DESC",
         ["Наименование кнопки", "Кол-во взятых блоков"]
     )
     top_lists_yesterday = getPreparation().prepareReport(
         "SELECT dlg.dispatch_group_name, count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
         "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
         "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
-        " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','-1 day') GROUP BY dlg.id  ORDER BY assignedCount DESC",
+        " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') GROUP BY dlg.id  ORDER BY assignedCount DESC",
         ["Наименование кнопки", "Кол-во взятых блоков"]
     )
     return template(_getTemplateFile("reports.tpl"),
