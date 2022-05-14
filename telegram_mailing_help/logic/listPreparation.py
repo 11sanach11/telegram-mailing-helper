@@ -11,6 +11,7 @@
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 import logging
+import numbers
 import threading
 import time
 import uuid
@@ -130,9 +131,13 @@ class Preparation:
 
     def prepareReport(self, sqlQuery: str, columns: list):
         result = []
-        totalSum = 0
+        totalSums = {}
         for s in self.dao.freeQuery(sqlQuery):
-            totalSum = totalSum + s[len(s) - 1]
+            for col in range(1, len(s)):
+                if not totalSums.get(col):
+                    totalSums[col] = 0
+                if s[col] is not None and isinstance(s[col],numbers.Number):
+                    totalSums[col]=totalSums[col]+s[col]
             result.append(list(s))
-        result.append(["Итого", totalSum])
+        result.append(["Итого"]+list(totalSums.values()))
         return tabulate(result, headers=columns, tablefmt='grid')

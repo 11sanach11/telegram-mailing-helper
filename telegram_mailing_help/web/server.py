@@ -97,27 +97,26 @@ def settings():
 @get("/pages/reports.html")
 def settings():
     top_today = getPreparation().prepareReport(
-        "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
+        "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','localtime') GROUP BY dla.users_id ORDER BY assignedCount DESC",
-        ["Имя", "Кол-во взятых блоков"])
+        "where DATE(dla.change_date)>=DATE('now','localtime') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"])
     top_yesterday = getPreparation().prepareReport(
-        "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
+        "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
-        ["Имя", "Кол-во взятых блоков"])
+        "where DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"])
     top_last_7_day = getPreparation().prepareReport(
-        "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
+        "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND DATE(dla.change_date)>=DATE('now','localtime' ,'-7 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
-        ["Имя", "Кол-во взятых блоков"])
+        "where DATE(dla.change_date)>=DATE('now','localtime' ,'-7 day') GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"])
     top_month = getPreparation().prepareReport(
-        "SELECT u.name, count(dla.dispatch_list_id) as assignedCount from DISPATCH_LIST_ASSIGNS dla "
+        "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
-        "where dla.state='assigned' AND "
-        "strftime('%Y',dla.change_date) = strftime('%Y',date('now','localtime')) AND  strftime('%m',dla.change_date) = strftime('%m',date('now','localtime'))"
+        "where strftime('%Y',dla.change_date) = strftime('%Y',date('now','localtime')) AND  strftime('%m',dla.change_date) = strftime('%m',date('now','localtime'))"
         " GROUP BY dla.users_id ORDER BY assignedCount DESC",
-        ["Имя", "Кол-во взятых блоков"]
+        ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"]
     )
     top_lists_today = getPreparation().prepareReport(
         "SELECT dlg.dispatch_group_name, count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
