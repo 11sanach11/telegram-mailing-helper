@@ -18,6 +18,12 @@
               <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-2" id="link-top_month" href="#top_month" role="tab" aria-controls="top_month" aria-selected="false">Топ по людям за месяц</a>
             </li>
               <li class="u-tab-item" role="presentation">
+              <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-2" id="link-top_today_by_groups" href="#top_today_by_groups" role="tab" aria-controls="top_today_by_groups" aria-selected="false">Взятые кнопки по людям за сегодня</a>
+            </li>
+              <li class="u-tab-item" role="presentation">
+              <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-2" id="link-top_yesterday_by_groups" href="#top_yesterday_by_groups" role="tab" aria-controls="top_yesterday_by_groups" aria-selected="false">Взятые кнопки по людям за вчера</a>
+            </li>
+              <li class="u-tab-item" role="presentation">
               <a class="u-active-palette-1-base u-border-2 u-border-grey-75 u-button-style u-hover-white u-tab-link u-white u-tab-link-3" id="link-top_lists_today" href="#top_lists_today" role="tab" aria-controls="top_lists_today" aria-selected="false">Топ по обработанным блокам за сегодня</a>
             </li>
               <li class="u-tab-item" role="presentation">
@@ -64,6 +70,28 @@
                   <div class="u-container-layout u-container-layout-4">
                     <pre>
 {{top_lists_today}}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="u-container-style u-tab-pane" id="top_today_by_groups" role="tabpanel" aria-labelledby="link-top_today_by_groups">
+              <div class="u-container-layout u-valign-top u-container-layout-3">
+                <div class="u-container-style u-group u-white u-group-2">
+                  <div class="u-container-layout u-container-layout-4">
+                    <pre>
+{{top_today_by_groups}}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="u-container-style u-tab-pane" id="top_yesterday_by_groups" role="tabpanel" aria-labelledby="link-top_yesterday_by_groups">
+              <div class="u-container-layout u-valign-top u-container-layout-3">
+                <div class="u-container-style u-group u-white u-group-2">
+                  <div class="u-container-layout u-container-layout-4">
+                    <pre>
+{{top_yesterday_by_groups}}
                     </pre>
                   </div>
                 </div>

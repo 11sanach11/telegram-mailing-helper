@@ -101,6 +101,22 @@ def settings():
         "left join USERS u on (u.id = dla.users_id ) "
         "where DATE(dla.change_date)>=DATE('now','localtime') GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"])
+    top_today_by_groups = getPreparation().prepareReport(
+        "select  dlg.dispatch_group_name, u.name, count(dla.uuid) as 'get' from DISPATCH_LIST_ASSIGNS dla "
+        "left join USERS u on dla.users_id=u.id "
+        "left join DISPATCH_LIST dl on dla.dispatch_list_id=dl.id "
+        "left join DISPATCH_LIST_GROUP dlg on dl.dispatch_group_id=dlg.id "
+        "where dla.state=='assigned' and DATE(dla.change_date)>=DATE('now','localtime') "
+        "group by u.id,dl.dispatch_group_id order by dlg.dispatch_group_name,u.name",
+        ["Название", "Имя польз.", "Кол-во взятых блоков"])
+    top_yesterday_by_groups = getPreparation().prepareReport(
+        "select  dlg.dispatch_group_name, u.name, count(dla.uuid) as 'get' from DISPATCH_LIST_ASSIGNS dla "
+        "left join USERS u on dla.users_id=u.id "
+        "left join DISPATCH_LIST dl on dla.dispatch_list_id=dl.id "
+        "left join DISPATCH_LIST_GROUP dlg on dl.dispatch_group_id=dlg.id "
+        "where dla.state=='assigned' and DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') "
+        "group by u.id,dl.dispatch_group_id order by dlg.dispatch_group_name,u.name",
+        ["Название", "Имя польз.", "Кол-во взятых блоков"])
     top_yesterday = getPreparation().prepareReport(
         "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
         "left join USERS u on (u.id = dla.users_id ) "
@@ -139,6 +155,8 @@ def settings():
                     top_lists_today=top_lists_today,
                     top_lists_yesterday=top_lists_yesterday,
                     top_last_7_day=top_last_7_day,
+                    top_today_by_groups=top_today_by_groups,
+                    top_yesterday_by_groups=top_yesterday_by_groups,
                     )
 
 

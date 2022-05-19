@@ -9,7 +9,7 @@ sudo service $service_name stop
 echo "CURRENT VERSION: $(git -C $workdir describe --tags --abbrev=0)"
 git -C $workdir pull || true
 echo "list of available version:"
-git -C $workdir tag
+git -C $workdir tag --sort=creatordate |tail -n 40
 [[ $UPDATE_TO_VERSION ]] && version="$UPDATE_TO_VERSION" || read -p 'Please set update version: ' version
 git -C $workdir checkout $version
 echo "Switch into version: $(git -C $workdir describe --tags --abbrev=0)"
