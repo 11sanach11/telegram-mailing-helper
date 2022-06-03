@@ -134,6 +134,13 @@ def settings():
         " GROUP BY dla.users_id ORDER BY assignedCount DESC",
         ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"]
     )
+    top_last_month = getPreparation().prepareReport(
+        "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
+        "left join USERS u on (u.id = dla.users_id ) "
+        "where strftime('%Y',dla.change_date) = strftime('%Y',date('now','localtime', '-1 month')) AND  strftime('%m',dla.change_date) = strftime('%m',date('now','localtime', '-1 month'))"
+        " GROUP BY dla.users_id ORDER BY assignedCount DESC",
+        ["Имя", "Кол-во взятых блоков", "Кол-во возвращенных блоков"]
+    )
     top_lists_today = getPreparation().prepareReport(
         "SELECT dlg.dispatch_group_name, count(dla.uuid) as assignedCount FROM DISPATCH_LIST_ASSIGNS dla "
         "LEFT JOIN DISPATCH_LIST dl ON (dl.id = dla.dispatch_list_id ) "
@@ -149,15 +156,17 @@ def settings():
         ["Наименование кнопки", "Кол-во взятых блоков"]
     )
     return template(_getTemplateFile("reports.tpl"),
-                    top_today=top_today,
-                    top_yesterday=top_yesterday,
-                    top_month=top_month,
-                    top_lists_today=top_lists_today,
-                    top_lists_yesterday=top_lists_yesterday,
-                    top_last_7_day=top_last_7_day,
-                    top_today_by_groups=top_today_by_groups,
-                    top_yesterday_by_groups=top_yesterday_by_groups,
-                    )
+                    reports=[
+                    "caption":"Топ по людям за сегодня", "key":"top_today", "data":top_today, "selected": True},
+                    "caption":"Топ по людям за вчера", "key":"top_yesterday", "data":top_yesterday, "selected": False},
+                    "caption":"Топ по людям за последние 7 дней", "key":"top_last_7_day", "data":top_last_7_day, "selected": False},
+                    "caption":"Топ по людям за месяц", "key":"top_month", "data":top_month, "selected": False},
+                    "caption":"Топ по людям за прошлый месяц", "key":"top_last_month", "data":top_last_month, "selected": False},
+                    "caption":"Взятые кнопки по людям за сегодня", "key":"top_today_by_groups", "data":top_today_by_groups, "selected": False},
+                    "caption":"Взятые кнопки по людям за вчера", "key":"top_yesterday_by_groups", "data":top_yesterday_by_groups, "selected": False},
+                    "caption":"Топ по обработанным блокам за сегодня", "key":"top_lists_today", "data":top_lists_today, "selected": False},
+                    "caption":"Топ по обработанным блокам за вчера", "key":"top_lists_yesterday", "data":top_lists_yesterday, "selected": False},
+                    ])
 
 
 @get("/pages/dispatch_lists.html")
