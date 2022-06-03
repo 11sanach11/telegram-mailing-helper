@@ -18,6 +18,7 @@ import pathlib
 import threading
 import time
 from functools import wraps
+from dataclasses import dataclass
 
 import bottle
 from bottle import TEMPLATE_PATH, HTTPResponse, BaseRequest, request, response, get, post, redirect, template, \
@@ -94,6 +95,14 @@ def settings():
     return template(_getTemplateFile("settings.tpl"), settings=getDb().getAllStorages())
 
 
+@dataclass
+class ReportTemplate:
+    key: str
+    title: str
+    data: str
+    selected: bool
+
+
 @get("/pages/reports.html")
 def settings():
     top_today = getPreparation().prepareReport(
@@ -157,15 +166,15 @@ def settings():
     )
     return template(_getTemplateFile("reports.tpl"),
                     reports=[
-                    "caption":"Топ по людям за сегодня", "key":"top_today", "data":top_today, "selected": True},
-                    "caption":"Топ по людям за вчера", "key":"top_yesterday", "data":top_yesterday, "selected": False},
-                    "caption":"Топ по людям за последние 7 дней", "key":"top_last_7_day", "data":top_last_7_day, "selected": False},
-                    "caption":"Топ по людям за месяц", "key":"top_month", "data":top_month, "selected": False},
-                    "caption":"Топ по людям за прошлый месяц", "key":"top_last_month", "data":top_last_month, "selected": False},
-                    "caption":"Взятые кнопки по людям за сегодня", "key":"top_today_by_groups", "data":top_today_by_groups, "selected": False},
-                    "caption":"Взятые кнопки по людям за вчера", "key":"top_yesterday_by_groups", "data":top_yesterday_by_groups, "selected": False},
-                    "caption":"Топ по обработанным блокам за сегодня", "key":"top_lists_today", "data":top_lists_today, "selected": False},
-                    "caption":"Топ по обработанным блокам за вчера", "key":"top_lists_yesterday", "data":top_lists_yesterday, "selected": False},
+                        ReportTemplate(title="Топ по людям за сегодня", key="top_today", data=top_today, selected=True),
+                        ReportTemplate(title="Топ по людям за вчера", key="top_yesterday", data=top_yesterday, selected=False),
+                        ReportTemplate(title="Топ по людям за последние 7 дней", key="top_last_7_day", data=top_last_7_day, selected=False),
+                        ReportTemplate(title="Топ по людям за месяц", key="top_month", data=top_month, selected=False),
+                        ReportTemplate(title="Топ по людям за прошлый месяц", key="top_last_month", data=top_last_month, selected=False),
+                        ReportTemplate(title="Взятые кнопки по людям за сегодня", key="top_today_by_groups", data=top_today_by_groups, selected=False),
+                        ReportTemplate(title="Взятые кнопки по людям за вчера", key="top_yesterday_by_groups", data=top_yesterday_by_groups, selected=False),
+                        ReportTemplate(title="Топ по обработанным блокам за сегодня", key="top_lists_today", data=top_lists_today, selected=False),
+                        ReportTemplate(title="Топ по обработанным блокам за вчера", key="top_lists_yesterday", data=top_lists_yesterday, selected=False),
                     ])
 
 
