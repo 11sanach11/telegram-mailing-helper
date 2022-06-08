@@ -168,7 +168,7 @@ def settings():
         '''SELECT dlg.dispatch_group_name, CASE WHEN dlg.enabled=true THEN "активна" ELSE "скрыта" END, COUNT(dl.id) 
         FROM DISPATCH_LIST dl LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id=dl.dispatch_group_id) 
         WHERE dl.is_assigned=false AND dlg.hidden=false GROUP BY dlg.id ORDER BY dlg.dispatch_group_name''',
-        ["Наименование кнопки", "Состояние", "Кол-во взятых блоков"]
+        ["Наименование кнопки", "Состояние", "Кол-во оставшихся блоков"]
     )
     return template(_getTemplateFile("reports.tpl"),
                     reports=[
