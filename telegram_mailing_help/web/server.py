@@ -164,6 +164,12 @@ def settings():
         " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') GROUP BY dlg.id  ORDER BY assignedCount DESC",
         ["Наименование кнопки", "Кол-во взятых блоков"]
     )
+    available_blocks_count=getPreparation().prepareReport(
+        '''SELECT dlg.dispatch_group_name, CASE WHEN dlg.enabled=true THEN "активна" ELSE "скрыта" END, COUNT(dl.id) 
+        FROM DISPATCH_LIST dl LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id=dl.dispatch_group_id) 
+        WHERE dl.is_assigned=false AND dlg.hidden=false GROUP BY dlg.id ORDER BY dlg.dispatch_group_name''',
+        ["Наименование кнопки", "Состояние", "Кол-во взятых блоков"]
+    )
     return template(_getTemplateFile("reports.tpl"),
                     reports=[
                         ReportTemplate(title="Топ по людям за сегодня", key="top_today", data=top_today, selected=True),
@@ -175,6 +181,7 @@ def settings():
                         ReportTemplate(title="Взятые кнопки по людям за вчера", key="top_yesterday_by_groups", data=top_yesterday_by_groups, selected=False),
                         ReportTemplate(title="Топ по обработанным блокам за сегодня", key="top_lists_today", data=top_lists_today, selected=False),
                         ReportTemplate(title="Топ по обработанным блокам за вчера", key="top_lists_yesterday", data=top_lists_yesterday, selected=False),
+                        ReportTemplate(title="Оставшиеся блоки", key="available_blocks_count", data=available_blocks_count, selected=False),
                     ])
 
 
