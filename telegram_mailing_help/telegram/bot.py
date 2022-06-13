@@ -128,10 +128,11 @@ class MailingBot:
             notInList = []
             inList = []
             for matchedTgId in gr.show_group_only_for.strip().split(","):
-                if str(matchedTgId)[0] == '-':
-                    notInList.append(matchedTgId[1:])
-                else:
-                    inList.append(matchedTgId)
+                if matchedTgId and matchedTgId.strip():
+                    if str(matchedTgId)[0] == '-':
+                        notInList.append(matchedTgId[1:])
+                    else:
+                        inList.append(matchedTgId)
             if inList:
                 return userTgId in inList
             elif notInList:
