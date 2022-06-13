@@ -123,6 +123,22 @@ class MailingBot:
         self.bot.send_message(chat_id=userId,
                               text=message)
 
+    def _filterByTelegramId(self, userTgId: str, gr):
+        if gr.show_group_only_for:
+            notInList = []
+            inList = []
+            for matchedTgId in gr.show_group_only_for.strip().split(","):
+                if str(matchedTgId)[0] == '-':
+                    notInList.append(matchedTgId[1:])
+                else:
+                    inList.append(matchedTgId)
+            if inList:
+                return userTgId in inList
+            elif notInList:
+                return userTgId not in notInList
+        else:
+            return True
+
     @timeit
     def commandMain(self, update: Update, context):
         message = update.message or update.callback_query.message
@@ -156,9 +172,8 @@ class MailingBot:
         else:
             message.reply_text(text="Инфо по работе бота здесь: /info")
 
-            dispatchGroups = filter(
-                lambda gr: not gr.show_group_only_for or user.telegram_id in gr.show_group_only_for.strip().split(","),
-                self.db.getEnabledDispatchGroupNames())
+            dispatchGroups = filter(lambda gr: self._filterByTelegramId(user.telegram_id, gr),
+                                    self.db.getEnabledDispatchGroupNames())
 
             buttons = [[InlineKeyboardButton(text=groupName.dispatch_group_name,
                                              callback_data="get_links_from: %s" % groupName.id),
