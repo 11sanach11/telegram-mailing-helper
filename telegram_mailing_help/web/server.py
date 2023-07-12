@@ -87,8 +87,8 @@ def is_auth_user(user, password):
     if appConfig["config"].telegramToken is None:
         for botInfo in appConfig["config"].telegramTokens.items():
             for loginInfo in botInfo[1].logins:
-                if user == loginInfo.user:
-                    if password == loginInfo.password:
+                if user == loginInfo.get("user"):
+                    if password == loginInfo.get("password"):
                         request.environ["TG_BOT_NAME"] = botInfo[0]
                         return True
                     else:

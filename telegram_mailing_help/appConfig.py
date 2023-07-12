@@ -24,16 +24,16 @@ import telegram_mailing_help.web.config as configServer
 _config = None
 
 
-@dataclass
-class Login:
-    user: str
-    password: str
+# @dataclass
+# class Login:
+#     user: str
+#     password: str
 
 
 @dataclass
 class Token:
     token: str
-    logins: list[Login]
+    logins: list#list[login] - haven't work in 3.8...
 
 
 @dataclass
@@ -42,7 +42,7 @@ class ApplicationConfiguration:
     telegramToken: Optional[str]
     logFileName: str
     db: configDb.Configuration
-    telegramTokens: dict[str, Token]
+    telegramTokens: dict# dict[str, Token] - haven't work in 3.8
     server: configServer.Configuration = configServer.Configuration()
     logOnlyInFile: bool = False
     telegramWebhookURL: str = None  # https://example.com, but post in https://example.com/t_webhook (or https://example.com/t_webhook/<bot_name> if multibot mode)
