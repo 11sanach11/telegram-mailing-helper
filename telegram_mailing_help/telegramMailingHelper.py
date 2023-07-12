@@ -21,7 +21,7 @@ from time import sleep
 import systemd.daemon
 
 import telegram_mailing_help.db.migration as db
-from telegram_mailing_help.appConfig import ApplicationConfiguration
+from telegram_mailing_help.appConfig import ApplicationConfiguration, Token
 from telegram_mailing_help.db.dao import Dao
 from telegram_mailing_help.logic.listPreparation import Preparation
 from telegram_mailing_help.telegram import bot
@@ -100,7 +100,7 @@ class TelegramMailingHelper:
         preparation = Preparation(appConfig, dao)
         self.preparationList[botName] = preparation
         webHookMode = appConfig.telegramToken is None
-        telegramToken = appConfig.telegramTokens[botName] if webHookMode else appConfig.telegramToken
+        telegramToken = appConfig.telegramTokens[botName].token if webHookMode else appConfig.telegramToken
         telegramWebhookURL = appConfig.telegramWebhookURL if webHookMode else None
         mailingBot = bot.MailingBot(botName, telegramToken, webHookMode, telegramWebhookURL, dao,
                                     preparation)

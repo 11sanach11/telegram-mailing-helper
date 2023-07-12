@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "telegram_mailing_help"
-version = "0.4.16"
+version = "b.1.0.0"
 description = ""
 authors = ["cherkashin <alexander.cherkashin@sibit.tech>"]
 
@@ -11,13 +11,13 @@ bottle = "^0.12.19"
 yoyo-migrations = "^7.2.1"
 dacite = "^1.6.0"
 sqlite3worker = "^1.1.7"
-gevent = "^20.12.1"
+gevent = "^22.10.2"
 systemd = "^0.16.1"
 tabulate = "^0.8.7"
 requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
+pytest = "^7.4.0"
 testcontainers = {extras = ["selenium"], version = "^3.4.2"}
 
 [build-system]

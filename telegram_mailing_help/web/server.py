@@ -21,7 +21,7 @@ from functools import wraps
 from dataclasses import dataclass
 
 import bottle
-from bottle import TEMPLATE_PATH, HTTPResponse, BaseRequest, request, response, get, post, redirect, template, \
+from bottle import TEMPLATE_PATH, HTTPResponse, BaseRequest, request, auth_basic, response, get, post, redirect, template, \
     static_file, run as run_bottle
 
 from telegram_mailing_help.telegramMailingHelper import _SINGLE_MODE_CONST
@@ -69,10 +69,33 @@ bottle.BaseTemplate.defaults["botName"] = botName
 dbMap = {}
 preparationMap = {}
 botMap = {}
+appConfig = {"config": None}
 
 
 def _getTemplateFile(templateName):
     return str(pathlib.Path(__file__).parent.absolute()) + '/templates/' + templateName
+
+
+def getXHelperBotNameHeader():
+    if appConfig["config"].telegramToken is None:
+        return request.environ.get("TG_BOT_NAME")
+    else:
+        return _SINGLE_MODE_CONST
+
+
+def is_auth_user(user, password):
+    if appConfig["config"].telegramToken is None:
+        for botInfo in appConfig["config"].telegramTokens.items():
+            for loginInfo in botInfo[1].logins:
+                if user == loginInfo.user:
+                    if password == loginInfo.password:
+                        request.environ["TG_BOT_NAME"] = botInfo[0]
+                        return True
+                    else:
+                        return False
+        return False
+    else:
+        return True
 
 
 @get("/")
@@ -86,11 +109,13 @@ def info():
 
 
 @get("/pages/users.html")
+@auth_basic(is_auth_user)
 def users():
     return template(_getTemplateFile("users.tpl"), users=getDb().getAllUsers(), userStateCls=UserState)
 
 
 @get("/pages/settings.html")
+@auth_basic(is_auth_user)
 def settings():
     return template(_getTemplateFile("settings.tpl"), settings=getDb().getAllStorages())
 
@@ -104,6 +129,7 @@ class ReportTemplate:
 
 
 @get("/pages/reports.html")
+@auth_basic(is_auth_user)
 def settings():
     top_today = getPreparation().prepareReport(
         "SELECT u.name, sum(case when dla.state=='assigned' then 1 end) as assignedCount, sum(case when dla.state=='rollback' then 1 end) as rollbackCount from DISPATCH_LIST_ASSIGNS dla "
@@ -164,7 +190,7 @@ def settings():
         " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime' ,'-1 day') GROUP BY dlg.id  ORDER BY assignedCount DESC",
         ["Наименование кнопки", "Кол-во взятых блоков"]
     )
-    available_blocks_count=getPreparation().prepareReport(
+    available_blocks_count = getPreparation().prepareReport(
         '''SELECT dlg.dispatch_group_name, CASE WHEN dlg.enabled=true THEN "активна" ELSE "скрыта" END, COUNT(dl.id) 
         FROM DISPATCH_LIST dl LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id=dl.dispatch_group_id) 
         WHERE dl.is_assigned=false AND dlg.hidden=false GROUP BY dlg.id ORDER BY dlg.dispatch_group_name''',
@@ -186,6 +212,7 @@ def settings():
 
 
 @get("/pages/dispatch_lists.html")
+@auth_basic(is_auth_user)
 def users():
     return template(_getTemplateFile("dispatch_lists.tpl"), dispatchGroupNames=list(getDb().getAllDispatchGroupNames()))
 
@@ -226,11 +253,13 @@ def _convertToClientResponse(state):
 
 
 @get("/api/lists/<state_id>/state")
+@auth_basic(is_auth_user)
 def getPreparationState(state_id):
     return _convertToClientResponse(getPreparation().getPreparationState(state_id))
 
 
 @post("/api/lists/add")
+@auth_basic(is_auth_user)
 def addDispatchList():
     dispatchGroupName = request.forms.name
     if dispatchGroupName:
@@ -248,12 +277,14 @@ def addDispatchList():
 
 
 @get("/templates/dispatch_group_buttons")
+@auth_basic(is_auth_user)
 def getDispatchGroupButtons():
     return template(_getTemplateFile("dispatch_group_buttons.tpl"),
                     dispatchGroupNames=list(getDb().getAllDispatchGroupNames()))
 
 
 @get("/templates/lists/<gr_id>")
+@auth_basic(is_auth_user)
 def getDispatchGroupInfo(gr_id):
     info = getDb().getDispatchGroupInfo(gr_id)
     return template(_getTemplateFile("dispatch_group_info.tpl"), data={
@@ -266,6 +297,7 @@ def getDispatchGroupInfo(gr_id):
 
 
 @post("/api/lists/<gr_id>/change")
+@auth_basic(is_auth_user)
 def changeParamOfGroup(gr_id: int):
     body = json.load(request.body)
     dispatchGroup = getDb().getDispatchListGroupById(gr_id)
@@ -278,6 +310,7 @@ def changeParamOfGroup(gr_id: int):
 
 
 @post("/api/lists/<gr_id>/state")
+@auth_basic(is_auth_user)
 def changeStateOfGroupAt(gr_id):
     body = json.load(request.body)
     if body["state"] == "enable":
@@ -290,6 +323,7 @@ def changeStateOfGroupAt(gr_id):
 
 
 @post("/api/users/state/change")
+@auth_basic(is_auth_user)
 def confirmUser():
     body = json.load(request.body)
     userId = body["id"]
@@ -305,15 +339,12 @@ def confirmUser():
 
 
 @get("/api/lists/<gr_id>/downloadData.txt")
+@auth_basic(is_auth_user)
 def downloadUnassignedData(gr_id):
     response.content_type = 'text/text; charset=UTF8'
     for s in getDb().freeQuery(
             "select links_values_butch from dispatch_list where dispatch_group_id=%s and is_assigned=0" % gr_id):
         yield s[0] + "\n"
-
-
-def getXHelperBotNameHeader():
-    return request.get_header("X-HELPER-BOT-NAME", _SINGLE_MODE_CONST);
 
 
 def getDb(botName: str = None) -> Dao:
@@ -332,6 +363,7 @@ def getBot(botName: str = None) -> MailingBot:
 
 
 @post("/api/settings/change")
+@auth_basic(is_auth_user)
 def confirmUser():
     body = json.load(request.body)
     key = body["key"]
@@ -341,6 +373,7 @@ def confirmUser():
 
 
 @post("/t_webhook/<bot_name>/<bot_token>")
+@auth_basic(is_auth_user)
 def update(bot_name: str, bot_token: str):
     if bot_token != getBot(bot_name).telegramToken:
         raise RuntimeError("wrong webhook call for helper bot %s: expected bot number: %s" %
@@ -359,6 +392,7 @@ class BottleServer(threading.Thread):
         dbMap = daoMap
         preparationMap = preparationMapParam
         botMap = tbotMap
+        appConfig["config"] = config
         self.daemon = True
         self.config = config
 
