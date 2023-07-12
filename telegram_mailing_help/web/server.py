@@ -373,7 +373,6 @@ def confirmUser():
 
 
 @post("/t_webhook/<bot_name>/<bot_token>")
-@auth_basic(is_auth_user)
 def update(bot_name: str, bot_token: str):
     if bot_token != getBot(bot_name).telegramToken:
         raise RuntimeError("wrong webhook call for helper bot %s: expected bot number: %s" %
