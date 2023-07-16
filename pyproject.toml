@@ -1,18 +1,18 @@
 [tool.poetry]
 name = "telegram_mailing_help"
-version = "1.0.2b"
+version = "1.0.3b"
 description = ""
 authors = ["cherkashin <alexander.cherkashin@sibit.tech>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 python-telegram-bot = "^13.1"
 bottle = "^0.12.19"
 yoyo-migrations = "^7.2.1"
 dacite = "^1.6.0"
 sqlite3worker = "^1.1.7"
 gevent = "^22.10.2"
-systemd = "^0.16.1"
+#systemd = "^0.16.1"
 tabulate = "^0.8.7"
 requests = "^2.26.0"
 
