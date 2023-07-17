@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker build -t telegram-mailing-helper:1.0.4b .
+docker build -t telegram-mailing-helper:1.0.5b .
