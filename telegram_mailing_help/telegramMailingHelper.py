@@ -16,7 +16,6 @@ from appConfig import prepareAndGetConfigOnly
 from logging import getLogger
 from signal import SIGINT, SIGTERM, SIGABRT, SIGHUP, signal
 from gevent import signal_handler
-from time import sleep
 
 import systemd.daemon
 

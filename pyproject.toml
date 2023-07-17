@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "telegram_mailing_help"
-version = "1.0.5b"
+version = "1.0.6b"
 description = ""
 authors = ["cherkashin <alexander.cherkashin@sibit.tech>"]
 
@@ -12,7 +12,6 @@ yoyo-migrations = "^7.2.1"
 dacite = "^1.6.0"
 sqlite3worker = "^1.1.7"
 gevent = "^22.10.2"
-systemd = "^0.16.1"
 tabulate = "^0.8.7"
 requests = "^2.26.0"
 
