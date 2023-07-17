@@ -1,4 +1,5 @@
 #!/bin/bash
+if [ ! -e /app/config/config.json ];then
 cat <<EOF >/app/config/config.json
 {
   "db": {
@@ -17,5 +18,6 @@ cat <<EOF >/app/config/config.json
   "logOnlyInFile": false
 }
 EOF
+fi;
 export PYTHONPATH="${PYTHONPATH}:/app/"
 exec poetry run python ./telegram_mailing_help/main.py /app/config/config.json
