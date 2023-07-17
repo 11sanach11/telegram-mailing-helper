@@ -20,7 +20,6 @@ if config.server.engine == "gevent":
 
 import logging
 from logging.handlers import RotatingFileHandler
-import systemd.daemon
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] %(message)s',
@@ -45,7 +44,6 @@ if __name__ == '__main__':
     print("Start helper...")
     TelegramMailingHelper(config)
     log.info('Startup complete')
-    systemd.daemon.notify(systemd.daemon.Notification.READY)
     print("Helper started.")
     while True:
         sleep(100)
