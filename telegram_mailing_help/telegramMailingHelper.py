@@ -68,6 +68,7 @@ class TelegramMailingHelper:
                     self._logAndPrintMessage("Bot: %s try to stop it" % botName)
                     self.stopBot(botName)
                     self.appConfig.telegramTokens.pop(botName)
+                self.appConfig.telegramTokens = newBotList
                 self._logAndPrintMessage(
                     "Bot list reloaded. current list of runned bots: %s" % self.appConfig.telegramTokens.keys())
             except Exception as e:
