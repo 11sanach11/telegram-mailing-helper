@@ -13,7 +13,7 @@
 import json
 import os
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 
 import dacite
@@ -43,7 +43,7 @@ class ApplicationConfiguration:
     logFileName: str
     db: configDb.Configuration
     telegramTokens: dict# dict[str, Token] - haven't work in 3.8
-    server: configServer.Configuration = configServer.Configuration()
+    server: configServer.Configuration = field(default_factory=configServer.Configuration)
     logOnlyInFile: bool = False
     telegramWebhookURL: str = None  # https://example.com, but post in https://example.com/t_webhook (or https://example.com/t_webhook/<bot_name> if multibot mode)
 

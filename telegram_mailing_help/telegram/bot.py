@@ -82,7 +82,7 @@ class MailingBot:
             self.bot = Bot(telegramToken)
             self.update_queue = Queue()
             self.dispatcher = Dispatcher(self.bot, self.update_queue)
-            thread = threading.Thread(target=self.dispatcher.start, name="%s dispathcer thread" % botName)
+            thread = threading.Thread(target=self.dispatcher.start, name="%s dispathcer thread" % botName, daemon=True)
             thread.start()
         else:
             self.updater = Updater(token=telegramToken)

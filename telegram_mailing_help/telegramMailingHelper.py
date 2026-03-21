@@ -12,7 +12,7 @@
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 # /usr/bin/env poetry run
 import sys
-from appConfig import prepareAndGetConfigOnly
+from telegram_mailing_help.appConfig import prepareAndGetConfigOnly
 from logging import getLogger
 from signal import SIGINT, SIGTERM, SIGABRT, SIGHUP, signal
 from gevent import signal_handler

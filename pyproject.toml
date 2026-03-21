@@ -5,7 +5,7 @@ description = ""
 authors = ["cherkashin <alexander.cherkashin@sibit.tech>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.11"
 python-telegram-bot = "^13.1"
 bottle = "^0.12.19"
 yoyo-migrations = "^7.2.1"
@@ -14,10 +14,13 @@ sqlite3worker = "^1.1.7"
 gevent = "^22.10.2"
 tabulate = "^0.8.7"
 requests = "^2.26.0"
+setuptools = ">=65.0.0,<71"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
+pytest-playwright = "^0.4"
 testcontainers = {extras = ["selenium"], version = "^3.4.2"}
+responses = ">=0.23"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

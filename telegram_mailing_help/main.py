@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.DEBUG,
 logging.getLogger("telegram.bot").setLevel(logging.INFO)
 logging.getLogger("telegram.vendor").setLevel(logging.INFO)
 from time import sleep
-from telegramMailingHelper import TelegramMailingHelper
+from telegram_mailing_help.telegramMailingHelper import TelegramMailingHelper
 
 log = logging.getLogger()
 
