@@ -44,6 +44,45 @@ def test_reports_page_loads(page: Page):
 
 
 # ---------------------------------------------------------------------------
+# Header navigation menu
+# ---------------------------------------------------------------------------
+
+def test_nav_menu_visible_on_desktop(page: Page):
+    """Desktop nav links are visible in the header without opening any hamburger."""
+    page.goto("/#/dispatch_lists")
+    nav = page.locator("nav.u-menu .u-nav-container")
+    expect(nav).to_be_visible()
+    # All four route links are rendered inside the desktop container
+    links = nav.locator("a.u-nav-link")
+    expect(links).to_have_count(4)
+
+
+def test_nav_links_navigate_between_pages(page: Page):
+    """Clicking each nav link routes to the correct hash URL and renders its page."""
+    page.goto("/#/dispatch_lists")
+
+    # Navigate to Users via nav link
+    page.locator("nav .u-nav-container a.u-nav-link", has_text="Пользователи").click()
+    expect(page).to_have_url("/#/users")
+    expect(page.locator("table.u-table-entity")).to_be_visible(timeout=10_000)
+
+    # Navigate to Settings
+    page.locator("nav .u-nav-container a.u-nav-link", has_text="Настройки").click()
+    expect(page).to_have_url("/#/settings")
+    expect(page.locator("table.u-table-entity")).to_be_visible(timeout=10_000)
+
+    # Navigate to Reports
+    page.locator("nav .u-nav-container a.u-nav-link", has_text="Отчеты").click()
+    expect(page).to_have_url("/#/reports")
+    expect(page.locator("body")).to_be_visible()
+
+    # Navigate back to Dispatch lists
+    page.locator("nav .u-nav-container a.u-nav-link", has_text="Редактирование списков").click()
+    expect(page).to_have_url("/#/dispatch_lists")
+    expect(page.locator("a.u-tab-link").first).to_be_visible()
+
+
+# ---------------------------------------------------------------------------
 # Dispatch list form interaction
 # ---------------------------------------------------------------------------
 
