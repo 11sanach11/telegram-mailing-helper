@@ -19,13 +19,14 @@ from gevent import signal_handler
 
 
 import telegram_mailing_help.db.migration as db
-from telegram_mailing_help.appConfig import ApplicationConfiguration, Token
+from telegram_mailing_help.appConfig import ApplicationConfiguration, Token, SINGLE_MODE_CONST
 from telegram_mailing_help.db.dao import Dao
 from telegram_mailing_help.logic.listPreparation import Preparation
 from telegram_mailing_help.telegram import bot
 from telegram_mailing_help.web import server
 
-_SINGLE_MODE_CONST: str = "single_606e77dc-2b39-4ed5-b2c1-65fe1f3e425d"
+# Keep the old name as an alias for backward compatibility with existing usages.
+_SINGLE_MODE_CONST = SINGLE_MODE_CONST
 
 log = getLogger()
 

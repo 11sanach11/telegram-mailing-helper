@@ -23,6 +23,8 @@ import telegram_mailing_help.web.config as configServer
 
 _config = None
 
+SINGLE_MODE_CONST: str = "single_606e77dc-2b39-4ed5-b2c1-65fe1f3e425d"
+
 
 # @dataclass
 # class Login:

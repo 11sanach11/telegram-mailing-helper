@@ -24,7 +24,7 @@ import bottle
 from bottle import TEMPLATE_PATH, HTTPResponse, BaseRequest, request, auth_basic, response, get, post, redirect, template, \
     static_file, run as run_bottle
 
-from telegram_mailing_help.telegramMailingHelper import _SINGLE_MODE_CONST
+from telegram_mailing_help.appConfig import SINGLE_MODE_CONST as _SINGLE_MODE_CONST
 
 HELPER_TEMPLATE_PATH = str(pathlib.Path(__file__).parent.absolute()) + '/templates/'
 TEMPLATE_PATH.append(HELPER_TEMPLATE_PATH)
