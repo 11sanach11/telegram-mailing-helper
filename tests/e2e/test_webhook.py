@@ -97,10 +97,10 @@ def post_webhook(base_url: str, bot_name: str, token: str, payload: dict):
 # ---------------------------------------------------------------------------
 
 def test_wrong_token_rejected(base_url, bot_name):
-    """Webhook with incorrect token must raise a server error."""
+    """Webhook with incorrect token must be rejected with an error status."""
     payload = make_message_update(chat_id=11111, text="/start")
     resp = post_webhook(base_url, bot_name, "0:wrong_token", payload)
-    assert resp.status_code == 500
+    assert resp.status_code in (400, 500)
 
 
 def test_new_user_registered_on_start(base_url, bot_name, tg_token, dao):

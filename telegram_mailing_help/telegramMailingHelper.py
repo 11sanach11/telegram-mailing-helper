@@ -122,7 +122,7 @@ class TelegramMailingHelper:
             raise RuntimeError(
                 "Can't start helper, wrong parameters, please set either telegramToken on telegramTokens!")
 
-        self.server = server.BottleServer(appConfig, self.daoList, self.preparationList, self.telegramBotList)
+        self.server = server.FastAPIServer(appConfig, self.daoList, self.preparationList, self.telegramBotList)
         self.server.start()
 
         if appConfig.server.engine == "gevent":

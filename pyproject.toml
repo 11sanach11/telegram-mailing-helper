@@ -7,7 +7,9 @@ authors = ["cherkashin <alexander.cherkashin@sibit.tech>"]
 [tool.poetry.dependencies]
 python = "^3.11"
 python-telegram-bot = "^13.1"
-bottle = "^0.12.19"
+fastapi = ">=0.110.0"
+uvicorn = ">=0.29.0"
+python-multipart = ">=0.0.9"
 yoyo-migrations = "^7.2.1"
 dacite = "^1.6.0"
 sqlite3worker = "^1.1.7"

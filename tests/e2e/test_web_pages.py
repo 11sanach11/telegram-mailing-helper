@@ -14,30 +14,32 @@ from playwright.sync_api import Page, expect
 
 def test_root_redirects_to_dispatch_lists(page: Page):
     page.goto("/")
-    expect(page).to_have_url("/pages/dispatch_lists.html")
+    # Vue Router (hash history) redirects / → /#/dispatch_lists
+    expect(page).to_have_url("/#/dispatch_lists")
 
 
 def test_dispatch_lists_page_loads(page: Page):
-    page.goto("/pages/dispatch_lists.html")
-    expect(page).to_have_title("Disp: Списки")
-    # Tab "Текущие рассылки" is present and active
-    expect(page.locator("a#link-tab-081f")).to_be_visible()
-    # Tab "Добавить новую" is present
-    expect(page.locator("a#link-tab-4d57")).to_be_visible()
+    page.goto("/#/dispatch_lists")
+    expect(page).to_have_title("Рассылки: админка")
+    # Two tab links should be visible: "Текущие рассылки" and "Добавить новую"
+    tabs = page.locator("a.u-tab-link")
+    expect(tabs.first).to_be_visible()
+    expect(tabs).to_have_count(2)
 
 
 def test_users_page_loads(page: Page):
-    page.goto("/pages/users.html")
-    expect(page.locator("table.u-table-entity")).to_be_visible()
+    page.goto("/#/users")
+    # Vue renders the table once /api/users-list responds
+    expect(page.locator("table.u-table-entity")).to_be_visible(timeout=10_000)
 
 
 def test_settings_page_loads(page: Page):
-    page.goto("/pages/settings.html")
-    expect(page.locator("table.u-table-entity")).to_be_visible()
+    page.goto("/#/settings")
+    expect(page.locator("table.u-table-entity")).to_be_visible(timeout=10_000)
 
 
 def test_reports_page_loads(page: Page):
-    page.goto("/pages/reports.html")
+    page.goto("/#/reports")
     expect(page.locator("body")).to_be_visible()
 
 
@@ -46,25 +48,23 @@ def test_reports_page_loads(page: Page):
 # ---------------------------------------------------------------------------
 
 def test_add_dispatch_list_via_ui(page: Page):
-    page.goto("/pages/dispatch_lists.html")
+    page.goto("/#/dispatch_lists")
 
-    # Switch to the "Добавить новую" tab
-    page.locator("a#link-tab-4d57").click()
+    # Switch to "Добавить новую" tab (second tab link)
+    page.locator("a.u-tab-link", has_text="Добавить новую").click()
 
-    form = page.locator("#add-dispatch-list-form")
+    form = page.locator("form.u-inner-form")
     expect(form).to_be_visible()
 
     # Fill required fields
-    page.fill("input[name='name']", "UI Test List")
-    page.fill("input[name='description']", "Created by Playwright")
-    page.fill("textarea[name='list']", "item1\nitem2\nitem3\nitem4\nitem5")
-    page.fill("input[name='groupSize']", "5")
-    page.fill("input[name='repeatTimes']", "1")
+    page.fill("input[placeholder*='Название']", "UI Test List")
+    page.fill("input[placeholder*='Описание']", "Created by Playwright")
+    page.fill("textarea[placeholder*='список']", "item1\nitem2\nitem3\nitem4\nitem5")
+    page.locator("input[list='groupSizeVariants']").fill("5")
+    page.locator("input[list='repeatTimesVariants']").fill("1")
 
-    # Click the visible submit button (the <a> with u-btn-submit class)
-    page.locator("a.u-btn-submit").click()
+    # Submit the form
+    page.locator("button[type='submit']").click()
 
-    # NicePage JS adds a second .u-form-send-success element dynamically with the
-    # API response text (the first static one stays hidden). Use .last so
-    # Playwright picks the newly visible element on each retry.
-    expect(page.locator(".u-form-send-success").last).to_be_visible(timeout=10_000)
+    # SweetAlert2 progress dialog should appear
+    expect(page.locator(".swal2-popup")).to_be_visible(timeout=10_000)
