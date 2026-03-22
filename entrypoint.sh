@@ -10,6 +10,12 @@ cat <<EOF >/app/config/config.json
     "host": "0.0.0.0",
     "engine": "gevent"
   },
+    "pwa": {
+    "enabled": true,
+    "port": 23446,
+    "host": "0.0.0.0",
+    "vapid_subject": "mailto:11sanacn11@gmail.com"
+  },
   "rootConfigDir": "/app/db/",
   "telegramToken": "${APP_TELEGRAM_TOKEN}",
   "telegramTokens": {},
