@@ -1,11 +1,12 @@
 """
 E2E test fixtures.
 
-Starts a real BottleServer with a real SQLite DB.  Outbound HTTP calls to the
-Telegram Bot API (api.telegram.org) are intercepted at the transport level by
-the `responses` library via TelegramApiMock — analogous to Spring's
-MockRestServiceServer.  No real Telegram API calls are made; all calls are
-recorded and can be asserted on in tests.
+Starts the application through TelegramMailingHelper — the same entry point
+used in production.  Outbound HTTP calls to the Telegram Bot API
+(api.telegram.org) are intercepted at the transport level by the `responses`
+library via TelegramApiMock — analogous to Spring's MockRestServiceServer.
+No real Telegram API calls are made; all calls are recorded and can be
+asserted on in tests.
 
 Playwright is used for browser and HTTP-level tests.
 """
@@ -21,7 +22,11 @@ import requests as _http
 from tests.e2e.tg_mock import TelegramApiMock
 
 
-TEST_TOKEN = "1234567890:AAtest_token_for_e2e_testing"
+TEST_TOKEN    = "1234567890:AAtest_token_for_e2e_testing"
+# In multi-bot mode (telegramTokens) TelegramMailingHelper starts the bot in
+# webhook mode.  We use a single-entry telegramTokens dict instead of the
+# legacy telegramToken field so that webHookMode=True is derived automatically.
+_BOT_NAME_SINGLE = "single_bot"
 
 
 # ---------------------------------------------------------------------------
@@ -69,8 +74,7 @@ def tg_mock() -> TelegramApiMock:
     HTTP-level Telegram Bot API mock, active for the whole test session.
 
     Intercepts every outbound `requests` call to api.telegram.org and records
-    it.  Localhost calls pass through normally so the Bottle server is
-    reachable by the test HTTP client.
+    it.  Localhost calls pass through normally so the server is reachable.
     """
     mock = TelegramApiMock(token=TEST_TOKEN)
     mock.start()
@@ -79,93 +83,78 @@ def tg_mock() -> TelegramApiMock:
 
 
 # ---------------------------------------------------------------------------
-# Main session fixture – starts the app server
+# Main session fixture – starts the app server via TelegramMailingHelper
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
 def app_server(tmp_path_factory, tg_mock):
     """
-    Starts the Bottle web server with a temporary SQLite DB.
-    Returns a dict with base_url, dao, bot_name, token, tg_mock.
+    Starts the application using TelegramMailingHelper (single-bot mode) with
+    a temporary SQLite DB.  Returns a dict with base_url, dao, bot, helper,
+    and other components for use in tests.
+
+    sys.argv is kept pointing at the config file for the duration of the
+    session so that signal-handler reload tests can call
+    prepareAndGetConfigOnly() and read the live config.
 
     The tg_mock fixture is injected here to guarantee HTTP interception is
     active before any application code (including Bot.__init__) runs.
     """
-    tmp = tmp_path_factory.mktemp("e2e")
-    db_file = str(tmp / "e2e.db")
+    tmp      = tmp_path_factory.mktemp("e2e")
+    db_file  = str(tmp / "e2e.db")
     data_dir = str(tmp / "data")
-    data_dir_path = Path(data_dir)
-    data_dir_path.mkdir(parents=True, exist_ok=True)
+    Path(data_dir).mkdir(parents=True, exist_ok=True)
 
-    port = _free_port()
+    port     = _free_port()
     base_url = f"http://localhost:{port}"
 
     config_data = {
-        "db": {"dbFile": db_file},
-        "server": {"port": port, "host": "localhost", "engine": "wsgiref"},
-        "rootConfigDir": str(data_dir_path) + "/",
-        "telegramToken": TEST_TOKEN,
-        "telegramTokens": {},
+        "db":       {"dbFile": db_file},
+        "server":   {"port": port, "host": "localhost", "engine": "wsgiref"},
+        "rootConfigDir": data_dir + "/",
+        # telegramToken=None forces multi-bot mode, which makes TelegramMailingHelper
+        # start the bot in webhook mode (webHookMode = telegramToken is None).
+        "telegramToken":  None,
+        "telegramTokens": {
+            _BOT_NAME_SINGLE: {
+                "token":  TEST_TOKEN,
+                "logins": [{"user": "admin", "password": "admin"}],
+            },
+        },
         "telegramWebhookURL": base_url,
-        "logFileName": str(tmp / "app.log"),
+        "logFileName":   str(tmp / "app.log"),
         "logOnlyInFile": False,
     }
     config_file = str(tmp / "config.json")
     Path(config_file).write_text(json.dumps(config_data))
 
-    old_argv = sys.argv[:]
-    sys.argv = [sys.argv[0], config_file]
+    old_argv  = sys.argv[:]
+    sys.argv  = [sys.argv[0], config_file]
 
-    # No telegram.Bot patching needed — the real Bot object is used and its
-    # outbound HTTP calls are intercepted by tg_mock (responses library).
     from telegram_mailing_help.appConfig import prepareAndGetConfigOnly
-    from telegram_mailing_help.db.migration import Migration
-    from telegram_mailing_help.db.dao import Dao
-    from telegram_mailing_help.logic.listPreparation import Preparation
-    from telegram_mailing_help.telegram.bot import MailingBot
-    from telegram_mailing_help.web.server import BottleServer
-    from telegram_mailing_help.telegramMailingHelper import _SINGLE_MODE_CONST
+    from telegram_mailing_help.telegramMailingHelper import TelegramMailingHelper
 
     app_config = prepareAndGetConfigOnly()
-
-    Migration(app_config, None).migrate()
-
-    dao = Dao(app_config, None)
-    preparation = Preparation(app_config, dao)
-
-    mailing_bot = MailingBot(
-        botName=_SINGLE_MODE_CONST,
-        telegramToken=TEST_TOKEN,
-        webHookMode=True,
-        telegramWebhookURL=base_url,
-        db=dao,
-        preparation=preparation,
-    )
-    mailing_bot.start()  # calls setWebhook → intercepted by tg_mock
-
-    server = BottleServer(
-        config=app_config,
-        daoMap={_SINGLE_MODE_CONST: dao},
-        preparationMapParam={_SINGLE_MODE_CONST: preparation},
-        tbotMap={_SINGLE_MODE_CONST: mailing_bot},
-    )
-    server.start()
-
-    sys.argv = old_argv
+    helper     = TelegramMailingHelper(app_config)
 
     assert _wait_server(f"{base_url}/info"), f"App server did not start at {base_url}"
 
     yield {
-        "base_url": base_url,
-        "dao": dao,
-        "preparation": preparation,
-        "bot": mailing_bot,
-        "bot_name": _SINGLE_MODE_CONST,
-        "token": TEST_TOKEN,
-        "tg_mock": tg_mock,
+        "base_url":    base_url,
+        "config_file": config_file,
+        "dao":         helper.daoList[_BOT_NAME_SINGLE],
+        "preparation": helper.preparationList[_BOT_NAME_SINGLE],
+        "bot":         helper.telegramBotList[_BOT_NAME_SINGLE],
+        "bot_name":    _BOT_NAME_SINGLE,
+        "token":       TEST_TOKEN,
+        "tg_mock":     tg_mock,
+        "helper":      helper,
     }
 
-    mailing_bot.stop()  # calls deleteWebhook → intercepted by tg_mock
+    for bot in list(helper.telegramBotList.values()):
+        bot.stop()
+
+    sys.argv = old_argv
 
 
 # ---------------------------------------------------------------------------
@@ -198,10 +187,8 @@ def bot_name(app_server):
 # Headed / headless is controlled via pytest-playwright's --headed flag.
 # ---------------------------------------------------------------------------
 
-# In Bottle 0.12.25, auth_basic checks `user is None` before calling the
-# check function, so requests without any Authorization header always get 401
-# even in single-bot mode. We pass dummy credentials so the header is present;
-# is_auth_user returns True for any creds in single-bot mode.
+# In single-bot mode is_auth_user returns True for any credentials, so we
+# just pass dummy ones to satisfy FastAPI's HTTPBasic header requirement.
 _HTTP_CREDENTIALS = {"username": "admin", "password": "admin"}
 
 
