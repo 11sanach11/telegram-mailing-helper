@@ -13,10 +13,6 @@
 from telegram_mailing_help.appConfig import prepareConfig
 
 config = prepareConfig()
-if config.server.engine == "gevent":
-    from gevent import monkey
-
-    monkey.patch_all()
 
 import logging
 from logging.handlers import RotatingFileHandler

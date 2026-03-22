@@ -1,8 +1,6 @@
-import asyncio
 import logging
 import pathlib
 import secrets
-import threading
 import time
 
 import uvicorn
@@ -62,12 +60,12 @@ def spa_fallback(path: str = ""):
     return FileResponse(STATIC_PATH + "index.html")
 
 
-class PwaServer(threading.Thread):
+class PwaServer:
+    """Sets up PWA module globals (deps, push broadcaster, secrets).
+    The actual HTTP serving is done by FastAPIServer.add_app() in the same event loop."""
 
     def __init__(self, appConfig, daoMap: dict, preparationMap: dict, botMap: dict):
         global _push_broadcaster
-        threading.Thread.__init__(self, name=__name__)
-        self.daemon = True
         self._appConfig = appConfig
 
         # Use the first (or only) bot's DAO/Prep
@@ -98,19 +96,3 @@ class PwaServer(threading.Thread):
         except Exception as e:
             log.warning("Could not generate VAPID keys: %s", e)
 
-    def run(self) -> None:
-        cfg = uvicorn.Config(
-            pwa_app,
-            host=self._appConfig.pwa.host,
-            port=self._appConfig.pwa.port,
-            log_level="warning",
-            access_log=False,
-        )
-        server = uvicorn.Server(cfg)
-        server.install_signal_handlers = lambda: None
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(server.serve())
-        finally:
-            loop.close()

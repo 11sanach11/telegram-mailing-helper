@@ -7,8 +7,7 @@ cat <<EOF >/app/config/config.json
   },
   "server": {
     "port": 23455,
-    "host": "0.0.0.0",
-    "engine": "gevent"
+    "host": "0.0.0.0"
   },
     "pwa": {
     "enabled": true,

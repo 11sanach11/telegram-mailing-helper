@@ -15,7 +15,6 @@ import sys
 from telegram_mailing_help.appConfig import prepareAndGetConfigOnly
 from logging import getLogger
 from signal import SIGINT, SIGTERM, SIGABRT, SIGHUP, signal
-from gevent import signal_handler
 
 
 import telegram_mailing_help.db.migration as db
@@ -127,22 +126,17 @@ class TelegramMailingHelper:
                 "Can't start helper, wrong parameters, please set either telegramToken on telegramTokens!")
 
         self.server = server.FastAPIServer(appConfig, self.daoList, self.preparationList, self.telegramBotList)
-        self.server.start()
 
         if appConfig.pwa.enabled:
             from telegram_mailing_help.pwa import server as pwa_server
-            self.pwa_server = pwa_server.PwaServer(
-                appConfig, self.daoList, self.preparationList, self.telegramBotList)
-            self.pwa_server.start()
-            log.info("PWA server started on %s:%s", appConfig.pwa.host, appConfig.pwa.port)
+            # Set up PWA globals and auto-generate secrets before the event loop starts
+            pwa_server.PwaServer(appConfig, self.daoList, self.preparationList, self.telegramBotList)
+            # Run PWA in the same event loop as the admin server to avoid gevent conflicts
+            self.server.add_app(pwa_server.pwa_app, appConfig.pwa.host, appConfig.pwa.port)
+            log.info("PWA server configured on %s:%s", appConfig.pwa.host, appConfig.pwa.port)
 
-        if appConfig.server.engine == "gevent":
-            for sig in (SIGINT, SIGTERM, SIGABRT):
-                signal_handler(sig, self.gevent_signal_stop_handler)
-            # process reload signal
-            signal_handler(SIGHUP, self.gevent_signal_reload_handler)
-        else:
-            for sig in (SIGINT, SIGTERM, SIGABRT):
-                signal(sig, self.signal_stop_handler)
-            # process reload signal
-            signal(SIGHUP, self.signal_reload_handler)
+        self.server.start()
+
+        for sig in (SIGINT, SIGTERM, SIGABRT):
+            signal(sig, self.signal_stop_handler)
+        signal(SIGHUP, self.signal_reload_handler)

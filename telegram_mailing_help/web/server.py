@@ -395,20 +395,30 @@ class FastAPIServer(threading.Thread):
         _appConfig = config
         self.daemon = True
         self.config = config
+        self._extra_apps = []  # list of (fastapi_app, host, port)
+
+    def add_app(self, extra_app, host: str, port: int):
+        """Register an additional FastAPI app to serve in the same event loop."""
+        self._extra_apps.append((extra_app, host, port))
 
     def run(self) -> None:
         import asyncio
-        config = uvicorn.Config(app,
-                                host=self.config.server.host,
-                                port=self.config.server.port,
-                                log_level="warning",
-                                access_log=False)
-        server = uvicorn.Server(config)
-        server.install_signal_handlers = lambda: None  # not allowed from non-main thread
+
+        def _make_server(asgi_app, host, port):
+            cfg = uvicorn.Config(asgi_app, host=host, port=port,
+                                 log_level="warning", access_log=False)
+            srv = uvicorn.Server(cfg)
+            srv.install_signal_handlers = lambda: None
+            return srv
+
+        servers = [_make_server(app, self.config.server.host, self.config.server.port)]
+        for extra_app, host, port in self._extra_apps:
+            servers.append(_make_server(extra_app, host, port))
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(server.serve())
+            loop.run_until_complete(asyncio.gather(*[s.serve() for s in servers]))
         finally:
             loop.close()
 
