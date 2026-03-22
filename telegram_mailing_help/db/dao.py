@@ -103,9 +103,22 @@ class DispatchGroupNameInfo:
 @dataclass
 class User:
     id: Optional[int]
-    telegram_id: str
+    telegram_id: Optional[str]
     name: str
     state: str
+    created: str
+    email: Optional[str] = None
+    password_hash: Optional[str] = None
+    pwa_last_login: Optional[str] = None
+
+
+@dataclass
+class PushSubscription:
+    id: Optional[int]
+    users_id: int
+    endpoint: str
+    p256dh: str
+    auth: str
     created: str
 
 
@@ -360,3 +373,48 @@ class Dao:
             "LEFT JOIN DISPATCH_LIST_GROUP dlg ON (dlg.id = dl.dispatch_group_id )"
             " WHERE dla.state='assigned' AND DATE(dla.change_date)=DATE('now','localtime') AND dlg.id=?",
             values=(dispatch_group_id,))[0]
+
+    # PWA-specific methods
+
+    def getUserByEmail(self, email: str):
+        result = self.worker.execute("SELECT * FROM USERS WHERE email=?", values=(email,))
+        return User(*result[0]) if len(result) == 1 else None
+
+    def savePushSubscription(self, sub: PushSubscription):
+        return self.__saveEntity("PWA_PUSH_SUBSCRIPTIONS", sub)
+
+    def deletePushSubscriptionByEndpoint(self, endpoint: str):
+        self.worker.execute("DELETE FROM PWA_PUSH_SUBSCRIPTIONS WHERE endpoint=?", values=(endpoint,))
+
+    def getPushSubscriptionsByUserId(self, users_id: int):
+        result = self.worker.execute(
+            "SELECT * FROM PWA_PUSH_SUBSCRIPTIONS WHERE users_id=?", values=(users_id,))
+        return [PushSubscription(*row) for row in result]
+
+    def getAllPushSubscriptions(self):
+        result = self.worker.execute("SELECT * FROM PWA_PUSH_SUBSCRIPTIONS")
+        return [PushSubscription(*row) for row in result]
+
+    def createTelegramLinkToken(self, users_id: int, token: str):
+        self.worker.execute(
+            "INSERT INTO PWA_TELEGRAM_LINK_TOKENS (token, users_id, created, used) VALUES (?, ?, ?, 0)",
+            values=(token, users_id, datetime.now().isoformat()))
+
+    def consumeTelegramLinkToken(self, token: str):
+        result = self.worker.execute(
+            "SELECT users_id, created FROM PWA_TELEGRAM_LINK_TOKENS WHERE token=? AND used=0",
+            values=(token,))
+        if not result:
+            return None
+        users_id, created_str = result[0]
+        from datetime import datetime as dt
+        if (dt.now() - dt.fromisoformat(created_str)).total_seconds() > 600:
+            return None
+        self.worker.execute(
+            "UPDATE PWA_TELEGRAM_LINK_TOKENS SET used=1 WHERE token=?", values=(token,))
+        return users_id
+
+    def linkTelegramToUser(self, user_id: int, telegram_id: str):
+        self.worker.execute(
+            "UPDATE USERS SET telegram_id=? WHERE id=? AND telegram_id IS NULL",
+            values=(telegram_id, user_id))

@@ -20,6 +20,7 @@ import dacite
 
 import telegram_mailing_help.db.config as configDb
 import telegram_mailing_help.web.config as configServer
+import telegram_mailing_help.pwa.config as configPwa
 
 _config = None
 
@@ -46,6 +47,7 @@ class ApplicationConfiguration:
     db: configDb.Configuration
     telegramTokens: dict# dict[str, Token] - haven't work in 3.8
     server: configServer.Configuration = field(default_factory=configServer.Configuration)
+    pwa: configPwa.PwaConfiguration = field(default_factory=configPwa.PwaConfiguration)
     logOnlyInFile: bool = False
     telegramWebhookURL: str = None  # https://example.com, but post in https://example.com/t_webhook (or https://example.com/t_webhook/<bot_name> if multibot mode)
 

@@ -101,8 +101,12 @@ class TelegramMailingHelper:
         webHookMode = appConfig.telegramToken is None
         telegramToken = appConfig.telegramTokens[botName].token if webHookMode else appConfig.telegramToken
         telegramWebhookURL = appConfig.telegramWebhookURL if webHookMode else None
+        push_broadcaster = None
+        if appConfig.pwa.enabled:
+            from telegram_mailing_help.pwa.push import PushBroadcaster
+            push_broadcaster = PushBroadcaster(dao, appConfig.pwa.vapid_subject)
         mailingBot = bot.MailingBot(botName, telegramToken, webHookMode, telegramWebhookURL, dao,
-                                    preparation)
+                                    preparation, push_broadcaster=push_broadcaster)
         mailingBot.start()
         self.telegramBotList[botName] = mailingBot
 
@@ -124,6 +128,13 @@ class TelegramMailingHelper:
 
         self.server = server.FastAPIServer(appConfig, self.daoList, self.preparationList, self.telegramBotList)
         self.server.start()
+
+        if appConfig.pwa.enabled:
+            from telegram_mailing_help.pwa import server as pwa_server
+            self.pwa_server = pwa_server.PwaServer(
+                appConfig, self.daoList, self.preparationList, self.telegramBotList)
+            self.pwa_server.start()
+            log.info("PWA server started on %s:%s", appConfig.pwa.host, appConfig.pwa.port)
 
         if appConfig.server.engine == "gevent":
             for sig in (SIGINT, SIGTERM, SIGABRT):

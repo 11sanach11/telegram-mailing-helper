@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#c84771">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Рассылки">
+  <title>Рассылки</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: #f5f5f5; color: #333; }
+    .app-header { background: #c84771; color: #fff; padding: 14px 16px;
+                  display: flex; align-items: center; justify-content: space-between;
+                  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,.2); }
+    .app-header h1 { font-size: 18px; font-weight: 600; }
+    .app-header nav a { color: #fff; text-decoration: none; margin-left: 12px; font-size: 14px; }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .btn { display: inline-block; padding: 10px 20px; border-radius: 6px; border: none;
+           cursor: pointer; font-size: 15px; font-weight: 500; text-decoration: none; }
+    .btn-primary { background: #c84771; color: #fff; width: 100%; text-align: center; }
+    .btn-secondary { background: #eee; color: #333; }
+    .btn-danger { background: #e53935; color: #fff; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #666; }
+    .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ddd;
+                        border-radius: 6px; font-size: 15px; }
+    .form-group input:focus { outline: none; border-color: #c84771; }
+    .alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 14px; }
+    .alert-error { background: #fdecea; color: #c62828; }
+    .alert-success { background: #e8f5e9; color: #2e7d32; }
+    .alert-info { background: #e3f2fd; color: #1565c0; }
+    .group-item { display: flex; align-items: center; justify-content: space-between;
+                  padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+    .group-item:last-child { border-bottom: none; }
+    .group-name { font-weight: 500; font-size: 15px; }
+    .group-desc { font-size: 13px; color: #888; margin-top: 2px; }
+    .block-content { background: #f9f9f9; border-radius: 6px; padding: 12px;
+                     font-family: monospace; font-size: 13px; white-space: pre-wrap;
+                     word-break: break-all; max-height: 300px; overflow-y: auto; margin-bottom: 12px; }
+    .history-item { font-size: 13px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; color: #555; }
+    .history-item:last-child { border-bottom: none; }
+    .history-time { font-size: 11px; color: #aaa; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+    .badge-new { background: #fff3e0; color: #e65100; }
+    .badge-confirmed { background: #e8f5e9; color: #2e7d32; }
+    .badge-blocked { background: #fdecea; color: #c62828; }
+    .token-box { background: #f5f5f5; border-radius: 6px; padding: 12px; text-align: center;
+                 font-size: 24px; font-weight: 700; letter-spacing: 4px; color: #c84771; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #eee;
+               border-top-color: #c84771; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .push-toggle { display: flex; align-items: center; gap: 12px; }
+    .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+              background: #ccc; border-radius: 28px; transition: .3s; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px;
+                     background: #fff; border-radius: 50%; transition: .3s; }
+    input:checked + .slider { background: #c84771; }
+    input:checked + .slider:before { transform: translateX(22px); }
+    [v-cloak] { display: none; }
+  </style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <div class="app-header" v-if="isLoggedIn">
+    <h1>Рассылки</h1>
+    <nav>
+      <a href="#/">Списки</a>
+      <a href="#/profile">Профиль</a>
+      <a href="#/" @click.prevent="logout" style="opacity:.7">Выйти</a>
+    </nav>
+  </div>
+  <router-view></router-view>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/vue-router@4/dist/vue-router.global.prod.js"></script>
+<script src="/static/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js')
+        .then(reg => console.log('SW registered', reg.scope))
+        .catch(err => console.warn('SW registration failed', err));
+    });
+  }
+</script>
+</body>
+</html>

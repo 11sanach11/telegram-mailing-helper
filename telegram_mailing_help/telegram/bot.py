@@ -70,9 +70,10 @@ def timeit(func):
 # unicode codes: https://apps.timwhitlock.info/emoji/tables/unicode
 class MailingBot:
     def __init__(self, botName: str, telegramToken: str, webHookMode: bool, telegramWebhookURL: str, db: Dao,
-                 preparation: Preparation, ):
+                 preparation: Preparation, push_broadcaster=None):
         self.db = db
         self.preparation = preparation
+        self.push_broadcaster = push_broadcaster
         self.daemon = True
         self.botName = botName
         self.telegramWebhookUrl = telegramWebhookURL
@@ -90,6 +91,7 @@ class MailingBot:
             self.dispatcher = self.updater.dispatcher
         self.dispatcher.add_handler(CommandHandler('start', self.commandMain))
         self.dispatcher.add_handler(CommandHandler('info', self.commandInfo))
+        self.dispatcher.add_handler(CommandHandler('link', self.commandLink))
         self.dispatcher.add_handler(
             CallbackQueryHandler(pattern=r"^get_dispatch_group_names$", callback=self.getDispatchGroupNames))
         self.dispatcher.add_handler(CallbackQueryHandler(pattern=r"^get_links_from: (.+)$", callback=self.getLinksFrom))
@@ -167,6 +169,11 @@ class MailingBot:
                              "admin_url": self.db.getValueFromStorage("admin_url") + "/pages/users.html"})
                 except Exception:
                     log.exception("Can't send message about new user into %s", telegramUserIdForNotification)
+                if self.push_broadcaster:
+                    try:
+                        self.push_broadcaster.notify_new_user(user)
+                    except Exception:
+                        log.exception("Can't send PWA push about new user")
             message.reply_text(text=text, reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton(text="Попробовать еще раз",
                                        callback_data="get_dispatch_group_names")]]))
@@ -207,6 +214,12 @@ class MailingBot:
                 notifTelegramId,
                 "\U000026A0 У списка %s осталось %s свободных блоков, может быть пора добавить новые, добавить можно в админке: %s/pages/dispatch_lists.html" %
                 (groupInfo.dispatch_group_name, countOfFreeBlocksTrigger, dao.getValueFromStorage("admin_url")))
+            if self.push_broadcaster:
+                try:
+                    self.push_broadcaster.notify_low_blocks(
+                        groupInfo.dispatch_group_name, countOfFreeBlocksTrigger)
+                except Exception:
+                    log.exception("Can't send PWA push about low blocks")
 
     @timeit
     def getLinksFrom(self, update: Update, context):
@@ -321,6 +334,30 @@ class MailingBot:
     @timeit
     def getDispatchGroupNames(self, update: Update, context):
         self.commandMain(update, context)
+
+    @timeit
+    def commandLink(self, update: Update, context):
+        message = update.message
+        if not message:
+            return
+        args = context.args or []
+        token_str = " ".join(args).strip().upper()
+        if not token_str:
+            message.reply_text("Укажите код после команды: /link XXXXXX")
+            return
+        telegram_id = str(message.chat.id)
+        users_id = self.db.consumeTelegramLinkToken(token_str)
+        if users_id is None:
+            message.reply_text(
+                "Код не найден или уже использован. Попробуйте сгенерировать новый в приложении.")
+            return
+        existing_tg_user = self.db.getUserByTelegramId(telegram_id)
+        if existing_tg_user and existing_tg_user.id != users_id:
+            message.reply_text(
+                "Этот Telegram аккаунт уже привязан к другому пользователю.")
+            return
+        self.db.linkTelegramToUser(users_id, telegram_id)
+        message.reply_text("Telegram аккаунт успешно привязан к вашему профилю в приложении!")
 
     def start(self):
         if self.webHookMode:
